@@ -73,3 +73,6 @@ verify_jwt = false
 
 [functions.tdlib-service]
 verify_jwt = false
+
+[functions.webrtc-rtmp-bridge]
+verify_jwt = false

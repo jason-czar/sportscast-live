@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Camera, Mic, MicOff, Video, VideoOff, LogOut, Wifi, Play } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useWebRTCStreaming } from '@/hooks/useWebRTCStreaming';
 import { toastService } from '@/lib/toast-service';
 import { supabase } from '@/integrations/supabase/client';
 import { useConnectionHeartbeat } from '@/hooks/useConnectionHeartbeat';
@@ -27,6 +28,10 @@ const TelegramCameraStream: React.FC = () => {
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isStreaming, setIsStreaming] = useState(false);
   const [cameraId, setCameraId] = useState<string | null>(null);
+  const [streamingMethod, setStreamingMethod] = useState<'rtmp' | 'webrtc'>('webrtc');
+
+  // WebRTC streaming hook
+  const webrtcStreaming = useWebRTCStreaming();
 
   // Use heartbeat to maintain connection status
   const { sendHeartbeat } = useConnectionHeartbeat({
@@ -158,6 +163,24 @@ const TelegramCameraStream: React.FC = () => {
 
       console.log('RTMP config received:', configData.streamConfig);
 
+      if (streamingMethod === 'webrtc') {
+        // Use WebRTC-to-RTMP bridge for web browsers
+        console.log('Starting WebRTC-to-RTMP streaming');
+        
+        await webrtcStreaming.initializeStreaming({
+          rtmpUrl: configData.streamConfig.rtmpUrl,
+          streamKey: configData.streamConfig.streamKey
+        });
+
+        await webrtcStreaming.startStreaming(stream);
+        
+        console.log('WebRTC streaming initialized and started');
+      } else {
+        // Direct RTMP streaming (for native apps)
+        console.log('Starting direct RTMP streaming');
+        // This would be implemented for native mobile apps
+      }
+
       // Start RTMP streaming to Telegram
       const { data, error } = await supabase.functions.invoke('telegram-stream', {
         body: {
@@ -179,12 +202,18 @@ const TelegramCameraStream: React.FC = () => {
       
       toastService.success({
         title: "🎥 Live Stream Started!",
-        description: "Your stream is now broadcasting live to Telegram with professional RTMP streaming.",
+        description: `Your stream is now broadcasting live to Telegram using ${streamingMethod.toUpperCase()} technology.`,
       });
 
     } catch (error) {
       console.error('Failed to start Telegram streaming:', error);
       setIsStreaming(false);
+      
+      // Stop WebRTC streaming if it was started
+      if (webrtcStreaming.isStreaming) {
+        await webrtcStreaming.stopStreaming();
+      }
+      
       toastService.error({
         description: "Failed to start live stream. Please try again.",
       });
@@ -194,6 +223,12 @@ const TelegramCameraStream: React.FC = () => {
   const stopTelegramStreaming = async () => {
     try {
       console.log('Stopping Telegram streaming for event:', eventId);
+      
+      // Stop WebRTC streaming if active
+      if (webrtcStreaming.isStreaming) {
+        await webrtcStreaming.stopStreaming();
+        console.log('WebRTC streaming stopped');
+      }
       
       // Get camera ID from database
       const { data: cameras, error: fetchError } = await supabase
@@ -314,12 +349,38 @@ const TelegramCameraStream: React.FC = () => {
 
         {/* Controls - bottom bar optimized for mobile and landscape */}
         <div className="p-4 bg-card border-t">
+          {/* Streaming method selector */}
+          <div className="mb-3 flex gap-2">
+            <Button
+              variant={streamingMethod === 'webrtc' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStreamingMethod('webrtc')}
+              className="flex-1"
+            >
+              WebRTC (Web)
+            </Button>
+            <Button
+              variant={streamingMethod === 'rtmp' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStreamingMethod('rtmp')}
+              className="flex-1"
+              disabled={true} // Disabled for web-only implementation
+            >
+              RTMP (Native)
+            </Button>
+          </div>
+
           {/* Streaming info */}
           <div className="mb-4 p-3 bg-muted/50 border rounded-lg">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium">Professional Streaming Active</p>
-                <p className="text-xs text-muted-foreground">Multi-platform distribution & high-quality delivery</p>
+                <p className="text-xs text-muted-foreground">
+                  {streamingMethod === 'webrtc' 
+                    ? 'WebRTC-to-RTMP bridge • High-quality web streaming'
+                    : 'Direct RTMP • Native mobile streaming'
+                  }
+                </p>
               </div>
               <Badge variant={isStreaming ? "default" : "secondary"}>
                 {isStreaming ? "Broadcasting" : "Ready"}
@@ -369,8 +430,11 @@ const TelegramCameraStream: React.FC = () => {
           
           <div className="text-center mt-3">
             <p className="text-xs text-muted-foreground">
-              Camera: {state.deviceLabel} • Professional streaming infrastructure
+              Camera: {state.deviceLabel} • {streamingMethod.toUpperCase()} streaming to Telegram
             </p>
+            {webrtcStreaming.isConnecting && (
+              <p className="text-xs text-blue-600 mt-1">Establishing WebRTC connection...</p>
+            )}
           </div>
         </div>
       </div>
