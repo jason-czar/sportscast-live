@@ -45,7 +45,7 @@ enabled = true
 port = 54329
 
 [functions.create-event]
-verify_jwt = true
+verify_jwt = false
 
 [functions.register-camera]
 verify_jwt = false
