@@ -107,8 +107,34 @@ const TelegramCameraStream: React.FC = () => {
     try {
       console.log('Starting Telegram streaming for event:', eventId);
       
-      // In a real implementation, this would integrate with Telegram's video streaming
-      // For now, we'll simulate starting the stream
+      // Update camera status to live in the database
+      const { data: cameras, error: fetchError } = await supabase
+        .from('cameras')
+        .select('id')
+        .eq('event_id', eventId)
+        .eq('device_label', state.deviceLabel)
+        .single();
+
+      if (fetchError || !cameras) {
+        console.error('Camera not found:', fetchError);
+        throw new Error('Camera not found in database');
+      }
+
+      // Mark camera as live
+      const { error: updateError } = await supabase
+        .from('cameras')
+        .update({ 
+          is_live: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', cameras.id);
+
+      if (updateError) {
+        console.error('Failed to update camera status:', updateError);
+        throw new Error('Failed to update camera status');
+      }
+
+      console.log('Camera marked as live in database:', cameras.id);
       setIsStreaming(true);
       
       toastService.success({
@@ -126,6 +152,33 @@ const TelegramCameraStream: React.FC = () => {
   const stopTelegramStreaming = async () => {
     try {
       console.log('Stopping Telegram streaming for event:', eventId);
+      
+      // Update camera status to offline in the database
+      const { data: cameras, error: fetchError } = await supabase
+        .from('cameras')
+        .select('id')
+        .eq('event_id', eventId)
+        .eq('device_label', state.deviceLabel)
+        .single();
+
+      if (fetchError || !cameras) {
+        console.error('Camera not found:', fetchError);
+      } else {
+        // Mark camera as offline
+        const { error: updateError } = await supabase
+          .from('cameras')
+          .update({ 
+            is_live: false,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', cameras.id);
+
+        if (updateError) {
+          console.error('Failed to update camera status:', updateError);
+        } else {
+          console.log('Camera marked as offline in database:', cameras.id);
+        }
+      }
       
       setIsStreaming(false);
       
