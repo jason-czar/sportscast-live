@@ -61,3 +61,6 @@ verify_jwt = false
 
 [functions.add-simulcast]
 verify_jwt = false
+
+[functions.telegram-stream]
+verify_jwt = false

@@ -12,7 +12,11 @@ serve(async (req) => {
   }
 
   try {
-    const { action, eventId, cameraId } = await req.json();
+    console.log('Telegram stream function called');
+    const requestBody = await req.json();
+    console.log('Request body:', JSON.stringify(requestBody));
+    
+    const { action, eventId, cameraId } = requestBody;
     console.log('Telegram stream action:', action, 'for event:', eventId, 'camera:', cameraId);
 
     // Create Supabase client
@@ -24,20 +28,26 @@ serve(async (req) => {
 
     // Get Telegram stream key from environment
     const telegramStreamKey = Deno.env.get('TELEGRAM_STREAM_KEY');
+    console.log('Telegram stream key available:', !!telegramStreamKey);
+    
     if (!telegramStreamKey) {
+      console.error('Telegram stream key not configured');
       throw new Error('Telegram stream key not configured');
     }
+
+    console.log('Action:', action, 'EventId:', eventId, 'CameraId:', cameraId);
 
     switch (action) {
       case 'getStreamConfig':
         // Return the RTMP configuration for the camera to use
+        // Using Telegram's streaming infrastructure
         return new Response(
           JSON.stringify({
             success: true,
             streamConfig: {
-              rtmpUrl: 'rtmp://ingest.rtmp.youtube.com/live2',
+              rtmpUrl: 'rtmp://live.telegram.org/live',
               streamKey: telegramStreamKey,
-              fullRtmpUrl: `rtmp://ingest.rtmp.youtube.com/live2/${telegramStreamKey}`
+              fullRtmpUrl: `rtmp://live.telegram.org/live/${telegramStreamKey}`
             }
           }),
           {
@@ -46,17 +56,19 @@ serve(async (req) => {
         );
 
       case 'startStream':
+        console.log('Starting stream for camera:', cameraId);
         // Update camera status to live
         const { error: startError } = await supabase
           .from('cameras')
           .update({ 
             is_live: true,
-            stream_url: `https://www.youtube.com/watch?v=${telegramStreamKey}`,
+            stream_url: `https://t.me/${telegramStreamKey}/live`,
             updated_at: new Date().toISOString()
           })
           .eq('id', cameraId);
 
         if (startError) {
+          console.error('Database update error:', startError);
           throw new Error('Failed to update camera status: ' + startError.message);
         }
 
@@ -66,7 +78,7 @@ serve(async (req) => {
           JSON.stringify({
             success: true,
             message: 'Stream started successfully',
-            streamUrl: `https://www.youtube.com/watch?v=${telegramStreamKey}`
+            streamUrl: `https://t.me/${telegramStreamKey}/live`
           }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
