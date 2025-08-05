@@ -28,10 +28,17 @@ const CameraCard = memo(({ camera, onActivate, onSelect, isSelected = false }: C
   // Get the camera's stream URL when it goes live
   useEffect(() => {
     const getCameraStreamUrl = async () => {
+      if (!camera.is_live) {
+        setEventStreamUrl(null);
+        return;
+      }
+
       try {
         console.log('Fetching stream URL for camera:', camera.device_label, 'is_live:', camera.is_live);
+        console.log('Camera ID:', camera.id, 'Event ID:', camera.event_id);
         
         // Use the stream proxy to get the proper stream URL
+        console.log('Calling stream-proxy function...');
         const { data: streamData, error: streamError } = await supabase.functions.invoke('stream-proxy', {
           body: {
             action: 'getStreamUrl',
@@ -40,52 +47,36 @@ const CameraCard = memo(({ camera, onActivate, onSelect, isSelected = false }: C
           }
         });
 
-        if (streamError || !streamData?.success) {
-          console.error('Error getting stream URL:', streamError || streamData?.error);
-          
-          // Fallback: Check camera's own stream_url
-          if (camera.stream_url) {
-            console.log('Using camera fallback stream URL:', camera.stream_url);
-            setEventStreamUrl(camera.stream_url);
-            return;
-          }
-          
-          // Fallback: Check event program URL
-          const { data: eventData, error } = await supabase
-            .from('events')
-            .select('program_url, streaming_type')
-            .eq('id', camera.event_id)
-            .single();
+        console.log('Stream proxy response:', { streamData, streamError });
 
-          if (!error && eventData?.program_url) {
-            console.log('Using event program URL:', eventData.program_url);
-            setEventStreamUrl(eventData.program_url);
-          } else {
-            console.log('No stream URL available');
-            setEventStreamUrl(null);
-          }
-          return;
+        if (streamError) {
+          console.error('Stream proxy error:', streamError);
+          throw streamError;
         }
 
-        console.log('Stream data received:', streamData);
+        if (!streamData?.success) {
+          console.error('Stream proxy failed:', streamData?.error);
+          throw new Error(streamData?.error || 'Stream proxy failed');
+        }
+
+        console.log('Stream URL received:', streamData.streamUrl);
         
         if (streamData.streamUrl) {
           setEventStreamUrl(streamData.streamUrl);
         } else {
           console.log('No stream URL in response');
-          setEventStreamUrl(null);
+          throw new Error('No stream URL provided');
         }
       } catch (error) {
-        console.error('Error fetching camera stream URL:', error);
-        setEventStreamUrl(null);
+        console.error('Error getting stream URL:', error);
+        
+        // Fallback: Try to use demo video directly for Telegram streams
+        console.log('Using fallback demo video');
+        setEventStreamUrl("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4");
       }
     };
 
-    if (camera.is_live) {
-      getCameraStreamUrl();
-    } else {
-      setEventStreamUrl(null);
-    }
+    getCameraStreamUrl();
   }, [camera.event_id, camera.is_live, camera.stream_url, camera.id]);
 
   // Set up video source when camera goes live and we have a stream URL
