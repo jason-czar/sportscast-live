@@ -26,6 +26,7 @@ interface Camera {
   is_live: boolean;
   is_active: boolean;
   event_id: string;
+  stream_url?: string;
 }
 
 interface EventData {
@@ -339,45 +340,46 @@ const DirectorDashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* YouTube Live URL */}
-              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Youtube className="h-5 w-5 text-red-600" />
-                  <div>
-                    <p className="font-medium">YouTube Live</p>
-                    <p className="text-sm text-muted-foreground">Watch on @jason_czar</p>
+              {/* Live Stream Player */}
+              <div className="aspect-video bg-black rounded-lg overflow-hidden mb-4">
+                {cameras.some(cam => cam.is_live) ? (
+                  <iframe
+                    src={`https://www.youtube.com/embed/live_stream?channel=${cameras.find(cam => cam.is_live)?.stream_url?.split('?v=')[1] || ''}&autoplay=1`}
+                    className="w-full h-full"
+                    allowFullScreen
+                    allow="autoplay; encrypted-media"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="text-center text-muted-foreground">
+                      <Play className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>No live streams active</p>
+                    </div>
                   </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.open('https://www.youtube.com/@jason_czar/live', '_blank')}
-                  className="flex items-center gap-2"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  View Live
-                </Button>
+                )}
               </div>
 
-              {/* Twitch Live URL - You'll need to replace with your actual Twitch username */}
-              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Twitch className="h-5 w-5 text-purple-600" />
-                  <div>
-                    <p className="font-medium">Twitch Live</p>
-                    <p className="text-sm text-muted-foreground">Watch on Twitch</p>
+              {/* Stream Links */}
+              {cameras.some(cam => cam.is_live && cam.stream_url) && (
+                <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Youtube className="h-5 w-5 text-red-600" />
+                    <div>
+                      <p className="font-medium">Live Stream</p>
+                      <p className="text-sm text-muted-foreground">Professional streaming active</p>
+                    </div>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(cameras.find(cam => cam.is_live)?.stream_url, '_blank')}
+                    className="flex items-center gap-2"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    View Live
+                  </Button>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.open('https://www.twitch.tv/jason_czar', '_blank')}
-                  className="flex items-center gap-2"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  View Live
-                </Button>
-              </div>
+              )}
 
               <div className="text-sm text-muted-foreground">
                 <p>💡 These URLs will be active only when the stream is live. Share them with your audience!</p>

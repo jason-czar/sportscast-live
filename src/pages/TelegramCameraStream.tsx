@@ -107,7 +107,7 @@ const TelegramCameraStream: React.FC = () => {
     try {
       console.log('Starting Telegram streaming for event:', eventId);
       
-      // Update camera status to live in the database
+      // Get camera ID from database
       const { data: cameras, error: fetchError } = await supabase
         .from('cameras')
         .select('id')
@@ -120,21 +120,22 @@ const TelegramCameraStream: React.FC = () => {
         throw new Error('Camera not found in database');
       }
 
-      // Mark camera as live
-      const { error: updateError } = await supabase
-        .from('cameras')
-        .update({ 
-          is_live: true,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', cameras.id);
+      // Call edge function to start stream with Telegram
+      const { data: streamResponse, error: streamError } = await supabase.functions
+        .invoke('telegram-stream', {
+          body: {
+            action: 'startStream',
+            eventId,
+            cameraId: cameras.id
+          }
+        });
 
-      if (updateError) {
-        console.error('Failed to update camera status:', updateError);
-        throw new Error('Failed to update camera status');
+      if (streamError || !streamResponse?.success) {
+        console.error('Failed to start stream:', streamError || streamResponse?.error);
+        throw new Error(streamResponse?.error || 'Failed to start stream');
       }
 
-      console.log('Camera marked as live in database:', cameras.id);
+      console.log('Stream started successfully:', streamResponse);
       setIsStreaming(true);
       
       toastService.success({
@@ -153,7 +154,7 @@ const TelegramCameraStream: React.FC = () => {
     try {
       console.log('Stopping Telegram streaming for event:', eventId);
       
-      // Update camera status to offline in the database
+      // Get camera ID from database
       const { data: cameras, error: fetchError } = await supabase
         .from('cameras')
         .select('id')
@@ -163,21 +164,22 @@ const TelegramCameraStream: React.FC = () => {
 
       if (fetchError || !cameras) {
         console.error('Camera not found:', fetchError);
-      } else {
-        // Mark camera as offline
-        const { error: updateError } = await supabase
-          .from('cameras')
-          .update({ 
-            is_live: false,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', cameras.id);
+        throw new Error('Camera not found in database');
+      }
 
-        if (updateError) {
-          console.error('Failed to update camera status:', updateError);
-        } else {
-          console.log('Camera marked as offline in database:', cameras.id);
-        }
+      // Call edge function to stop stream
+      const { data: streamResponse, error: streamError } = await supabase.functions
+        .invoke('telegram-stream', {
+          body: {
+            action: 'stopStream',
+            eventId,
+            cameraId: cameras.id
+          }
+        });
+
+      if (streamError || !streamResponse?.success) {
+        console.error('Failed to stop stream:', streamError || streamResponse?.error);
+        // Continue anyway to update local state
       }
       
       setIsStreaming(false);
