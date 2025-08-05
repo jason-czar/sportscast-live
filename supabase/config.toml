@@ -64,3 +64,6 @@ verify_jwt = false
 
 [functions.telegram-stream]
 verify_jwt = false
+
+[functions.camera-status]
+verify_jwt = false

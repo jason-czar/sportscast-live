@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toastService } from '@/lib/toast-service';
 import { supabase } from '@/integrations/supabase/client';
+import { useConnectionHeartbeat } from '@/hooks/useConnectionHeartbeat';
 
 interface LocationState {
   eventData: any;
@@ -25,6 +26,15 @@ const TelegramCameraStream: React.FC = () => {
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [cameraId, setCameraId] = useState<string | null>(null);
+
+  // Use heartbeat to maintain connection status
+  const { sendHeartbeat } = useConnectionHeartbeat({
+    cameraId: cameraId || undefined,
+    eventId: eventId || undefined,
+    enabled: !!cameraId && !!stream,
+    interval: 15000 // Every 15 seconds
+  });
   const isMobile = useIsMobile();
 
   const state = location.state as LocationState;
@@ -104,46 +114,60 @@ const TelegramCameraStream: React.FC = () => {
   };
 
   const startTelegramStreaming = async () => {
+    if (!stream || isStreaming) return;
+
     try {
       console.log('Starting Telegram streaming for event:', eventId);
-      
-      // Get camera ID from database
-      const { data: cameras, error: fetchError } = await supabase
-        .from('cameras')
-        .select('id')
-        .eq('event_id', eventId)
-        .eq('device_label', state.deviceLabel)
-        .single();
+      setIsStreaming(true);
 
-      if (fetchError || !cameras) {
-        console.error('Camera not found:', fetchError);
-        throw new Error('Camera not found in database');
-      }
-
-      // Call edge function to start stream with Telegram
-      const { data: streamResponse, error: streamError } = await supabase.functions
-        .invoke('telegram-stream', {
+      // Register camera first if not already done
+      let currentCameraId = cameraId;
+      if (!currentCameraId) {
+        console.log('Registering camera for Telegram streaming');
+        const { data: registerData, error: registerError } = await supabase.functions.invoke('register-camera', {
           body: {
-            action: 'startStream',
             eventId,
-            cameraId: cameras.id
+            deviceLabel: state?.deviceLabel || 'Telegram Camera',
+            eventCode: state?.eventData?.event_code
           }
         });
 
-      if (streamError || !streamResponse?.success) {
-        console.error('Failed to start stream:', streamError || streamResponse?.error);
-        throw new Error(streamResponse?.error || 'Failed to start stream');
+        if (registerError) {
+          console.error('Error registering camera:', registerError);
+          throw registerError;
+        }
+
+        currentCameraId = registerData.cameraId;
+        setCameraId(currentCameraId);
+        console.log('Camera registered with ID:', currentCameraId);
       }
 
-      console.log('Stream started successfully:', streamResponse);
-      setIsStreaming(true);
+      const { data, error } = await supabase.functions.invoke('telegram-stream', {
+        body: {
+          action: 'startStream',
+          eventId,
+          cameraId: currentCameraId
+        }
+      });
+
+      if (error) {
+        console.error('Error starting Telegram stream:', error);
+        throw error;
+      }
+
+      console.log('Telegram stream started successfully:', data);
+      
+      // Send initial heartbeat
+      sendHeartbeat();
       
       toastService.success({
-        title: "Live Streaming Started",
-        description: "Your camera is now broadcasting live!",
+        title: "🎥 Live Stream Started!",
+        description: "Your stream is now broadcasting to Telegram and other platforms.",
       });
+
     } catch (error) {
-      console.error('Error starting Telegram stream:', error);
+      console.error('Failed to start Telegram streaming:', error);
+      setIsStreaming(false);
       toastService.error({
         description: "Failed to start live stream. Please try again.",
       });

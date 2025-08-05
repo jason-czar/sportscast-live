@@ -63,12 +63,32 @@ export class RealtimeConnectionManager {
   }
 
   private checkConnectionHealth() {
-    // Check if Supabase realtime is connected
-    const isConnected = supabase.realtime.isConnected();
-    
-    if (isConnected && !this.stats.connected) {
-      this.handleConnectionOpen();
-    } else if (!isConnected && this.stats.connected) {
+    try {
+      // Check if Supabase realtime is connected
+      const isConnected = supabase.realtime.isConnected();
+      
+      if (isConnected !== this.stats.connected) {
+        if (isConnected) {
+          this.handleConnectionOpen();
+        } else {
+          this.handleConnectionClose();
+        }
+      }
+      
+      // Check individual channel statuses
+      let allChannelsConnected = true;
+      Object.entries(this.channels).forEach(([name, channel]) => {
+        if (channel && channel.state !== 'joined') {
+          allChannelsConnected = false;
+          console.log(`[RealtimeConnection] Channel ${name} not connected, state: ${channel.state}`);
+        }
+      });
+      
+      if (!allChannelsConnected && this.options.autoReconnect) {
+        this.handleConnectionClose();
+      }
+    } catch (error) {
+      console.error('[RealtimeConnection] Error checking connection health:', error);
       this.handleConnectionClose();
     }
   }

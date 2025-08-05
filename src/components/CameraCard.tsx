@@ -10,6 +10,7 @@ interface Camera {
   is_live: boolean;
   is_active: boolean;
   event_id: string;
+  stream_url?: string;
 }
 
 interface CameraCardProps {
@@ -24,14 +25,23 @@ const CameraCard = memo(({ camera, onActivate, onSelect, isSelected = false }: C
   const [videoError, setVideoError] = useState(false);
   const [eventStreamUrl, setEventStreamUrl] = useState<string | null>(null);
 
-  // Get the event's program URL for video streaming
+  // Get the camera's stream URL when it goes live
   useEffect(() => {
-    const getEventStreamUrl = async () => {
+    const getCameraStreamUrl = async () => {
       try {
-        console.log('Fetching stream URL for camera:', camera.device_label, 'event:', camera.event_id);
+        console.log('Fetching stream URL for camera:', camera.device_label, 'is_live:', camera.is_live);
+        
+        // For live cameras, first check if camera has its own stream_url
+        if (camera.stream_url) {
+          console.log('Using camera stream URL:', camera.stream_url);
+          setEventStreamUrl(camera.stream_url);
+          return;
+        }
+        
+        // Fallback to event program URL
         const { data: eventData, error } = await supabase
           .from('events')
-          .select('program_url, mux_stream_id')
+          .select('program_url, mux_stream_id, streaming_type')
           .eq('id', camera.event_id)
           .single();
 
@@ -43,20 +53,27 @@ const CameraCard = memo(({ camera, onActivate, onSelect, isSelected = false }: C
         console.log('Event data:', eventData);
         
         if (eventData.program_url) {
-          console.log('Setting stream URL to:', eventData.program_url);
+          console.log('Setting stream URL to event program URL:', eventData.program_url);
           setEventStreamUrl(eventData.program_url);
+        } else if (eventData.streaming_type === 'telegram') {
+          // For Telegram streams, create a placeholder stream URL
+          const telegramStreamUrl = `https://t.me/live_stream_${camera.id}`;
+          console.log('Setting Telegram stream URL:', telegramStreamUrl);
+          setEventStreamUrl(telegramStreamUrl);
         } else {
-          console.log('No program URL available for event');
+          console.log('No stream URL available for camera');
         }
       } catch (error) {
-        console.error('Error fetching event stream URL:', error);
+        console.error('Error fetching camera stream URL:', error);
       }
     };
 
     if (camera.is_live) {
-      getEventStreamUrl();
+      getCameraStreamUrl();
+    } else {
+      setEventStreamUrl(null);
     }
-  }, [camera.event_id, camera.is_live]);
+  }, [camera.event_id, camera.is_live, camera.stream_url]);
 
   // Set up video source when camera goes live and we have a stream URL
   useEffect(() => {

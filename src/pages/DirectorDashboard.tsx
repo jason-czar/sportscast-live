@@ -15,6 +15,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { Play, Square, Users, Wifi, WifiOff, Monitor, Settings, Eye, Youtube, Twitch, ExternalLink } from "lucide-react";
 import { useRealtimePresence } from "@/hooks/useRealtimePresence";
 import { useRealtimeEventUpdates } from "@/hooks/useRealtimeEventUpdates";
+import { useRealtimeCleanup } from "@/hooks/useRealtimeCleanup";
 import CameraCard from "@/components/CameraCard";
 import EventHeader from "@/components/EventHeader";
 import EventQRCode from "@/components/EventQRCode";
@@ -56,6 +57,13 @@ const DirectorDashboard = () => {
   
   const { event, cameras, loading: dataLoading } = useRealtimeEventUpdates({
     eventId: eventId || ''
+  });
+
+  // Cleanup stale connections
+  useRealtimeCleanup({
+    eventId: eventId || '',
+    enabled: true,
+    interval: 30000 // Clean up every 30 seconds
   });
   
   

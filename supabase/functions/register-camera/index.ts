@@ -44,8 +44,9 @@ serve(async (req) => {
         event_id: eventId,
         device_label: deviceLabel,
         stream_key: streamKey,
-        is_live: false,
-        is_active: false
+        is_live: true, // Mark as live immediately when registering
+        is_active: false,
+        stream_url: null
       })
       .select()
       .single();
