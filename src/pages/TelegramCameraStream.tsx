@@ -142,6 +142,23 @@ const TelegramCameraStream: React.FC = () => {
         console.log('Camera registered with ID:', currentCameraId);
       }
 
+      // Get RTMP streaming configuration from TDLib
+      const { data: configData, error: configError } = await supabase.functions.invoke('telegram-stream', {
+        body: {
+          action: 'getStreamConfig',
+          eventId,
+          cameraId: currentCameraId
+        }
+      });
+
+      if (configError || !configData?.success) {
+        console.error('Failed to get RTMP config:', configError || configData?.error);
+        throw new Error('Failed to get streaming configuration');
+      }
+
+      console.log('RTMP config received:', configData.streamConfig);
+
+      // Start RTMP streaming to Telegram
       const { data, error } = await supabase.functions.invoke('telegram-stream', {
         body: {
           action: 'startStream',
@@ -162,7 +179,7 @@ const TelegramCameraStream: React.FC = () => {
       
       toastService.success({
         title: "🎥 Live Stream Started!",
-        description: "Your stream is now broadcasting to Telegram and other platforms.",
+        description: "Your stream is now broadcasting live to Telegram with professional RTMP streaming.",
       });
 
     } catch (error) {

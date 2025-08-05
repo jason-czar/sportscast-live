@@ -70,3 +70,6 @@ verify_jwt = false
 
 [functions.stream-proxy]
 verify_jwt = false
+
+[functions.tdlib-service]
+verify_jwt = false

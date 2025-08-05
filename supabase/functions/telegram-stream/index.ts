@@ -26,28 +26,48 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get Telegram stream key from environment
-    const telegramStreamKey = Deno.env.get('TELEGRAM_STREAM_KEY');
-    console.log('Telegram stream key available:', !!telegramStreamKey);
-    
-    if (!telegramStreamKey) {
-      console.error('Telegram stream key not configured');
-      throw new Error('Telegram stream key not configured');
+    // Get event data to check Telegram configuration
+    const { data: eventData, error: eventError } = await supabase
+      .from('events')
+      .select('name, telegram_channel_id, telegram_invite_link')
+      .eq('id', eventId)
+      .single();
+
+    if (eventError || !eventData) {
+      throw new Error('Event not found');
     }
 
+    console.log('Event data:', eventData);
     console.log('Action:', action, 'EventId:', eventId, 'CameraId:', cameraId);
 
     switch (action) {
       case 'getStreamConfig':
-        // Return the RTMP configuration for the camera to use
-        // Using Telegram's streaming infrastructure
+        console.log('Getting RTMP stream configuration via TDLib');
+        
+        // Call TDLib service to get real RTMP credentials
+        const { data: rtmpData, error: rtmpError } = await supabase.functions.invoke('tdlib-service', {
+          body: {
+            action: 'getRTMPCredentials',
+            chatId: eventData.telegram_channel_id || '@sportstreamx',
+            eventName: eventData.name,
+            eventId: eventId
+          }
+        });
+
+        if (rtmpError || !rtmpData?.success) {
+          console.error('Failed to get RTMP credentials:', rtmpError || rtmpData?.error);
+          throw new Error('Failed to get RTMP credentials from TDLib');
+        }
+
+        console.log('RTMP credentials received:', rtmpData);
+
         return new Response(
           JSON.stringify({
             success: true,
             streamConfig: {
-              rtmpUrl: 'rtmp://live.telegram.org/live',
-              streamKey: telegramStreamKey,
-              fullRtmpUrl: `rtmp://live.telegram.org/live/${telegramStreamKey}`
+              rtmpUrl: rtmpData.rtmpUrl,
+              streamKey: rtmpData.streamKey,
+              fullRtmpUrl: rtmpData.fullRtmpUrl
             }
           }),
           {
@@ -57,12 +77,31 @@ serve(async (req) => {
 
       case 'startStream':
         console.log('Starting stream for camera:', cameraId);
-        // Update camera status to live
+        
+        // Create or get RTMP stream via TDLib
+        const { data: streamData, error: streamError } = await supabase.functions.invoke('tdlib-service', {
+          body: {
+            action: 'createRTMPStream',
+            chatId: eventData.telegram_channel_id || '@sportstreamx',
+            eventName: eventData.name,
+            eventId: eventId
+          }
+        });
+
+        if (streamError || !streamData?.success) {
+          console.error('Failed to create RTMP stream:', streamError || streamData?.error);
+          throw new Error('Failed to create RTMP stream via TDLib');
+        }
+
+        console.log('RTMP stream created:', streamData);
+
+        // Update camera status to live with real stream URL
         const { error: startError } = await supabase
           .from('cameras')
           .update({ 
             is_live: true,
-            stream_url: `https://t.me/${telegramStreamKey}/live`,
+            stream_url: streamData.viewUrl || `https://t.me/sportstreamx`,
+            stream_key: streamData.streamKey,
             updated_at: new Date().toISOString()
           })
           .eq('id', cameraId);
@@ -78,7 +117,9 @@ serve(async (req) => {
           JSON.stringify({
             success: true,
             message: 'Stream started successfully',
-            streamUrl: `https://t.me/${telegramStreamKey}/live`
+            streamUrl: streamData.viewUrl || `https://t.me/sportstreamx`,
+            rtmpUrl: streamData.rtmpUrl,
+            streamKey: streamData.streamKey
           }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
