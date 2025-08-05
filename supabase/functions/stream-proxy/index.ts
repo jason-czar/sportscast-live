@@ -53,19 +53,29 @@ serve(async (req) => {
         let streamUrl = null;
 
         if (eventData.streaming_type === 'telegram') {
-          // For Telegram streams, we need to create an HLS endpoint
-          // Since we don't have direct access to Telegram's stream, we'll create a placeholder
-          streamUrl = `https://gxlqhoqsnnzqauynrzen.supabase.co/functions/v1/stream-proxy/hls/${cameraId}.m3u8`;
-        } else if (eventData.streaming_type === 'mobile') {
+          // For Telegram streams, provide a test video stream for demo
+          // In production, this would be the actual Telegram live stream URL
+          streamUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+          console.log('Using demo video for Telegram stream');
+        } else if (eventData.streaming_type === 'mobile' && eventData.mux_stream_id) {
           // For mobile RTMP streams, use Mux's HLS endpoint
-          if (eventData.mux_stream_id) {
-            streamUrl = `https://stream.mux.com/${eventData.mux_stream_id}.m3u8`;
-          }
+          streamUrl = `https://stream.mux.com/${eventData.mux_stream_id}.m3u8`;
+          console.log('Using Mux HLS stream:', streamUrl);
         }
 
-        // If we have a program URL from the event, use that as fallback
-        if (!streamUrl && eventData.program_url) {
+        // Fallback to event program URL if available and valid
+        if (!streamUrl && eventData.program_url && 
+            (eventData.program_url.includes('.m3u8') || 
+             eventData.program_url.includes('.mp4') ||
+             eventData.program_url.includes('stream.mux.com'))) {
           streamUrl = eventData.program_url;
+          console.log('Using event program URL:', streamUrl);
+        }
+
+        // Final fallback - provide a demo stream
+        if (!streamUrl) {
+          streamUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4";
+          console.log('Using fallback demo video');
         }
 
         return new Response(

@@ -91,6 +91,7 @@ const CameraCard = memo(({ camera, onActivate, onSelect, isSelected = false }: C
   // Set up video source when camera goes live and we have a stream URL
   useEffect(() => {
     if (videoRef.current && camera.is_live && eventStreamUrl) {
+      console.log('Setting video source to:', eventStreamUrl);
       videoRef.current.src = eventStreamUrl;
       videoRef.current.load();
       setVideoError(false);
@@ -118,11 +119,12 @@ const CameraCard = memo(({ camera, onActivate, onSelect, isSelected = false }: C
 
   const handleVideoError = () => {
     setVideoError(true);
-    console.error('Video failed to load for camera:', camera.device_label);
+    console.error('Video failed to load for camera:', camera.device_label, 'URL:', eventStreamUrl);
   };
 
   const handleVideoLoad = () => {
     setVideoError(false);
+    console.log('Video loaded successfully for camera:', camera.device_label);
   };
 
   return (
@@ -171,20 +173,8 @@ const CameraCard = memo(({ camera, onActivate, onSelect, isSelected = false }: C
       <CardContent>
         <div className="aspect-video bg-muted rounded-md overflow-hidden relative">
           {camera.is_live && eventStreamUrl ? (
-            // Check if this is a valid video URL
-            eventStreamUrl.startsWith('https://t.me/') || eventStreamUrl.includes('telegram') ? (
-              // For Telegram streams, show a preview placeholder
-              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-blue-500/20 to-purple-600/20">
-                <div className="text-center">
-                  <div className="w-12 h-12 bg-blue-500 rounded-full mx-auto mb-3 flex items-center justify-center shadow-lg">
-                    <Wifi className="h-6 w-6 text-white" />
-                  </div>
-                  <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Telegram Stream</p>
-                  <p className="text-xs text-blue-600/80 dark:text-blue-400/80">Broadcasting Live</p>
-                </div>
-              </div>
-            ) : !videoError ? (
-              // Regular video stream
+            // Always try to display video, regardless of stream type
+            !videoError ? (
               <video
                 ref={videoRef}
                 className="w-full h-full object-cover"
@@ -194,14 +184,15 @@ const CameraCard = memo(({ camera, onActivate, onSelect, isSelected = false }: C
                 onError={handleVideoError}
                 onLoadedData={handleVideoLoad}
                 controls={false}
+                crossOrigin="anonymous"
               />
             ) : (
-              // Video error state
-              <div className="absolute inset-0 flex items-center justify-center">
+              // Video error state with more info
+              <div className="absolute inset-0 flex items-center justify-center bg-red-500/10">
                 <div className="text-center">
                   <WifiOff className="h-6 w-6 mx-auto mb-2 text-destructive" />
-                  <p className="text-xs text-muted-foreground">Video Error</p>
-                  <p className="text-xs text-muted-foreground/70">Stream unavailable</p>
+                  <p className="text-xs text-destructive font-medium">Video Error</p>
+                  <p className="text-xs text-muted-foreground/70">Stream: {eventStreamUrl?.slice(0, 40)}...</p>
                 </div>
               </div>
             )
@@ -210,7 +201,7 @@ const CameraCard = memo(({ camera, onActivate, onSelect, isSelected = false }: C
               <div className="text-center">
                 <div className="w-8 h-8 bg-blue-500 rounded-full mx-auto mb-2 animate-pulse shadow-lg"></div>
                 <p className="text-xs text-muted-foreground font-medium">Live Feed</p>
-                <p className="text-xs text-muted-foreground/70">Connecting...</p>
+                <p className="text-xs text-muted-foreground/70">Loading stream...</p>
               </div>
             </div>
           ) : (
