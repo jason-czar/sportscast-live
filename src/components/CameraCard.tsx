@@ -31,40 +31,53 @@ const CameraCard = memo(({ camera, onActivate, onSelect, isSelected = false }: C
       try {
         console.log('Fetching stream URL for camera:', camera.device_label, 'is_live:', camera.is_live);
         
-        // For live cameras, first check if camera has its own stream_url
-        if (camera.stream_url) {
-          console.log('Using camera stream URL:', camera.stream_url);
-          setEventStreamUrl(camera.stream_url);
+        // Use the stream proxy to get the proper stream URL
+        const { data: streamData, error: streamError } = await supabase.functions.invoke('stream-proxy', {
+          body: {
+            action: 'getStreamUrl',
+            eventId: camera.event_id,
+            cameraId: camera.id
+          }
+        });
+
+        if (streamError || !streamData?.success) {
+          console.error('Error getting stream URL:', streamError || streamData?.error);
+          
+          // Fallback: Check camera's own stream_url
+          if (camera.stream_url) {
+            console.log('Using camera fallback stream URL:', camera.stream_url);
+            setEventStreamUrl(camera.stream_url);
+            return;
+          }
+          
+          // Fallback: Check event program URL
+          const { data: eventData, error } = await supabase
+            .from('events')
+            .select('program_url, streaming_type')
+            .eq('id', camera.event_id)
+            .single();
+
+          if (!error && eventData?.program_url) {
+            console.log('Using event program URL:', eventData.program_url);
+            setEventStreamUrl(eventData.program_url);
+          } else {
+            console.log('No stream URL available');
+            setEventStreamUrl(null);
+          }
           return;
         }
-        
-        // Fallback to event program URL
-        const { data: eventData, error } = await supabase
-          .from('events')
-          .select('program_url, mux_stream_id, streaming_type')
-          .eq('id', camera.event_id)
-          .single();
 
-        if (error || !eventData) {
-          console.log('No event data found:', error);
-          return;
-        }
-
-        console.log('Event data:', eventData);
+        console.log('Stream data received:', streamData);
         
-        if (eventData.program_url) {
-          console.log('Setting stream URL to event program URL:', eventData.program_url);
-          setEventStreamUrl(eventData.program_url);
-        } else if (eventData.streaming_type === 'telegram') {
-          // For Telegram streams, create a placeholder stream URL
-          const telegramStreamUrl = `https://t.me/live_stream_${camera.id}`;
-          console.log('Setting Telegram stream URL:', telegramStreamUrl);
-          setEventStreamUrl(telegramStreamUrl);
+        if (streamData.streamUrl) {
+          setEventStreamUrl(streamData.streamUrl);
         } else {
-          console.log('No stream URL available for camera');
+          console.log('No stream URL in response');
+          setEventStreamUrl(null);
         }
       } catch (error) {
         console.error('Error fetching camera stream URL:', error);
+        setEventStreamUrl(null);
       }
     };
 
@@ -73,7 +86,7 @@ const CameraCard = memo(({ camera, onActivate, onSelect, isSelected = false }: C
     } else {
       setEventStreamUrl(null);
     }
-  }, [camera.event_id, camera.is_live, camera.stream_url]);
+  }, [camera.event_id, camera.is_live, camera.stream_url, camera.id]);
 
   // Set up video source when camera goes live and we have a stream URL
   useEffect(() => {
@@ -157,31 +170,47 @@ const CameraCard = memo(({ camera, onActivate, onSelect, isSelected = false }: C
       </CardHeader>
       <CardContent>
         <div className="aspect-video bg-muted rounded-md overflow-hidden relative">
-          {camera.is_live && eventStreamUrl && !videoError ? (
-            <video
-              ref={videoRef}
-              className="w-full h-full object-cover"
-              autoPlay
-              muted
-              playsInline
-              onError={handleVideoError}
-              onLoadedData={handleVideoLoad}
-              controls={false}
-            />
+          {camera.is_live && eventStreamUrl ? (
+            // Check if this is a valid video URL
+            eventStreamUrl.startsWith('https://t.me/') || eventStreamUrl.includes('telegram') ? (
+              // For Telegram streams, show a preview placeholder
+              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-blue-500/20 to-purple-600/20">
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-blue-500 rounded-full mx-auto mb-3 flex items-center justify-center shadow-lg">
+                    <Wifi className="h-6 w-6 text-white" />
+                  </div>
+                  <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Telegram Stream</p>
+                  <p className="text-xs text-blue-600/80 dark:text-blue-400/80">Broadcasting Live</p>
+                </div>
+              </div>
+            ) : !videoError ? (
+              // Regular video stream
+              <video
+                ref={videoRef}
+                className="w-full h-full object-cover"
+                autoPlay
+                muted
+                playsInline
+                onError={handleVideoError}
+                onLoadedData={handleVideoLoad}
+                controls={false}
+              />
+            ) : (
+              // Video error state
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <WifiOff className="h-6 w-6 mx-auto mb-2 text-destructive" />
+                  <p className="text-xs text-muted-foreground">Video Error</p>
+                  <p className="text-xs text-muted-foreground/70">Stream unavailable</p>
+                </div>
+              </div>
+            )
           ) : camera.is_live && !eventStreamUrl ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
-                <div className="w-8 h-8 bg-destructive rounded-full mx-auto mb-2 animate-pulse shadow-lg"></div>
+                <div className="w-8 h-8 bg-blue-500 rounded-full mx-auto mb-2 animate-pulse shadow-lg"></div>
                 <p className="text-xs text-muted-foreground font-medium">Live Feed</p>
                 <p className="text-xs text-muted-foreground/70">Connecting...</p>
-              </div>
-            </div>
-          ) : videoError ? (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <WifiOff className="h-6 w-6 mx-auto mb-2 text-destructive" />
-                <p className="text-xs text-muted-foreground">Video Error</p>
-                <p className="text-xs text-muted-foreground/70">Stream unavailable</p>
               </div>
             </div>
           ) : (
