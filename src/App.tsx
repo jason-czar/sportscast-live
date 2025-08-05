@@ -13,6 +13,7 @@ import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import CreateEvent from "./pages/CreateEvent";
 import JoinAsCamera from "./pages/JoinAsCamera";
+import GuestJoinCamera from "./pages/GuestJoinCamera";
 import CameraStream from "./pages/CameraStream";
 import TelegramCameraStream from "./pages/TelegramCameraStream";
 import DirectorDashboard from "./pages/DirectorDashboard";
@@ -47,8 +48,12 @@ const App = () => {
                   </ErrorBoundary>
                 } 
               />
+              {/* Guest camera access - no authentication required */}
+              <Route path="/join-camera" element={<GuestJoinCamera />} />
+              
+              {/* Legacy authenticated camera route */}
               <Route 
-                path="/join-camera" 
+                path="/join-as-camera" 
                 element={
                   <ErrorBoundary>
                     <ProtectedRoute>
@@ -85,16 +90,9 @@ const App = () => {
                   </ErrorBoundary>
                 } 
               />
-              <Route 
-                path="/camera/telegram/:eventId" 
-                element={
-                  <ErrorBoundary>
-                    <ProtectedRoute>
-                      <TelegramCameraStream />
-                    </ProtectedRoute>
-                  </ErrorBoundary>
-                } 
-              />
+              {/* Guest-accessible camera streaming routes */}
+              <Route path="/camera/telegram/:eventId" element={<TelegramCameraStream />} />
+              <Route path="/camera-stream/:eventId" element={<CameraStream />} />
               <Route 
                 path="/profile" 
                 element={
