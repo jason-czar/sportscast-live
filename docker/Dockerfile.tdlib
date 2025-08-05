@@ -1,0 +1,27 @@
+# Dockerfile for TDLib service
+FROM ubuntu:22.04
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    gperf \
+    libssl-dev \
+    zlib1g-dev \
+    libreadline-dev \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Build TDLib
+RUN git clone https://github.com/tdlib/td.git
+WORKDIR /td
+RUN mkdir build && cd build && \
+    cmake -DCMAKE_BUILD_TYPE=Release .. && \
+    cmake --build . --target install
+
+# Set up JSON interface
+COPY tdlib-json-server.cpp /app/
+WORKDIR /app
+RUN g++ -o tdlib-server tdlib-json-server.cpp -ltdjson
+
+EXPOSE 8080
+CMD ["./tdlib-server"]
