@@ -26,15 +26,13 @@ const CreateEvent = () => {
     eventName: "",
     sportType: "",
     dateTime: "",
-    expectedDuration: "",
+    expectedDuration: "180",
     streamingType: ""
   });
 
-  // Set default datetime to 1 hour from now
+  // Set default datetime to current time
   useEffect(() => {
     const now = new Date();
-    now.setHours(now.getHours() + 1);
-    now.setMinutes(0, 0, 0); // Round to the hour
     const defaultDateTime = now.toISOString().slice(0, 16);
     setFormData(prev => ({ ...prev, dateTime: defaultDateTime }));
   }, []);
@@ -194,7 +192,7 @@ const CreateEvent = () => {
                     type="number"
                     value={formData.expectedDuration}
                     onChange={(e) => setFormData({...formData, expectedDuration: e.target.value})}
-                    placeholder="90"
+                    placeholder="180"
                     min="1"
                     required
                   />
