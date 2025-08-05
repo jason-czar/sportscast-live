@@ -27,6 +27,7 @@ interface Camera {
   is_live: boolean;
   is_active: boolean;
   event_id: string;
+  stream_url?: string | null;
   updated_at?: string;
 }
 
