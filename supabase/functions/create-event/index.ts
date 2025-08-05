@@ -105,10 +105,11 @@ serve(async (req) => {
       body: JSON.stringify({
         playback_policy: ['public'],
         new_asset_settings: { 
-          playback_policy: ['public'] 
+          playbook_policy: ['public'] 
         },
         reconnect_window: 60,
-        reduced_latency: true
+        latency_mode: 'low', // Use low latency mode for 5-15s glass-to-glass
+        reduced_latency: true // Deprecated but kept for compatibility
       })
     });
 

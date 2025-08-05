@@ -56,8 +56,8 @@ serve(async (req) => {
       throw new Error('Failed to register camera');
     }
 
-    // Construct RTMP ingest URL
-    const ingestUrl = `rtmp://global-live.mux.com/live/${streamKey}`;
+    // Construct RTMP ingest URL using Mux's format
+    const ingestUrl = `rtmp://global-live.mux.com:5222/app/${streamKey}`;
 
     console.log('Camera registered successfully:', cameraData.id);
 
