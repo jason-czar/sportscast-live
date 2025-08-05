@@ -3,7 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Camera, Mic, MicOff, Video, VideoOff, LogOut, MessageCircle, ExternalLink } from 'lucide-react';
+import { Camera, Mic, MicOff, Video, VideoOff, LogOut, Wifi, Play } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toastService } from '@/lib/toast-service';
@@ -112,13 +112,13 @@ const TelegramCameraStream: React.FC = () => {
       setIsStreaming(true);
       
       toastService.success({
-        title: "Telegram Streaming Started",
-        description: "Your camera is now streaming via Telegram's infrastructure!",
+        title: "Live Streaming Started",
+        description: "Your camera is now broadcasting live!",
       });
     } catch (error) {
       console.error('Error starting Telegram stream:', error);
       toastService.error({
-        description: "Failed to start Telegram stream. Please try again.",
+        description: "Failed to start live stream. Please try again.",
       });
     }
   };
@@ -130,12 +130,12 @@ const TelegramCameraStream: React.FC = () => {
       setIsStreaming(false);
       
       toastService.success({
-        description: "Telegram stream stopped.",
+        description: "Live stream stopped.",
       });
     } catch (error) {
       console.error('Error stopping Telegram stream:', error);
       toastService.error({
-        description: "Failed to stop Telegram stream.",
+        description: "Failed to stop live stream.",
       });
     }
   };
@@ -168,10 +168,10 @@ const TelegramCameraStream: React.FC = () => {
         {/* Header - compact for mobile */}
         <div className="flex items-center justify-between p-4 bg-card border-b">
           <div className="flex items-center gap-2">
-            <MessageCircle className="h-5 w-5 text-blue-500" />
-            <span className="font-semibold">Telegram Camera</span>
+            <Camera className="h-5 w-5 text-primary" />
+            <span className="font-semibold">Live Camera</span>
             <Badge variant={isStreaming ? "default" : "secondary"} className="text-xs">
-              {isStreaming ? "Live" : "Standby"}
+              {isStreaming ? "Streaming" : "Standby"}
             </Badge>
           </div>
           <div className="flex items-center gap-2">
@@ -209,33 +209,25 @@ const TelegramCameraStream: React.FC = () => {
             </div>
           )}
 
-          {/* Telegram-specific overlay */}
-          <div className="absolute top-4 right-4 bg-blue-500/80 text-white px-3 py-1 rounded-lg text-sm flex items-center gap-2">
-            <MessageCircle className="h-4 w-4" />
-            Telegram Stream
+          {/* Streaming status overlay */}
+          <div className="absolute top-4 right-4 bg-primary/80 text-white px-3 py-1 rounded-lg text-sm flex items-center gap-2">
+            {isStreaming ? <Wifi className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            {isStreaming ? 'Live Stream' : 'Ready to Stream'}
           </div>
         </div>
 
         {/* Controls - bottom bar optimized for mobile and landscape */}
         <div className="p-4 bg-card border-t">
-          {/* Telegram-specific info */}
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          {/* Streaming info */}
+          <div className="mb-4 p-3 bg-muted/50 border rounded-lg">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-blue-800">Telegram Integration Active</p>
-                <p className="text-xs text-blue-600">Streaming to YouTube, Twitch & Telegram</p>
+                <p className="text-sm font-medium">Professional Streaming Active</p>
+                <p className="text-xs text-muted-foreground">Multi-platform distribution & high-quality delivery</p>
               </div>
-              {state.eventData.telegram_invite_link && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={openTelegramChannel}
-                  className="border-blue-300 text-blue-700 hover:bg-blue-100"
-                >
-                  <ExternalLink className="h-4 w-4 mr-1" />
-                  Join Chat
-                </Button>
-              )}
+              <Badge variant={isStreaming ? "default" : "secondary"}>
+                {isStreaming ? "Broadcasting" : "Ready"}
+              </Badge>
             </div>
           </div>
 
@@ -262,9 +254,10 @@ const TelegramCameraStream: React.FC = () => {
               <Button 
                 size={isMobile ? "default" : "lg"} 
                 onClick={startTelegramStreaming} 
-                className="px-6 bg-blue-600 hover:bg-blue-700"
+                className="px-6"
               >
-                Start Telegram Stream
+                <Play className="h-4 w-4 mr-2" />
+                Start Live Stream
               </Button>
             ) : (
               <Button 
@@ -280,7 +273,7 @@ const TelegramCameraStream: React.FC = () => {
           
           <div className="text-center mt-3">
             <p className="text-xs text-muted-foreground">
-              Camera: {state.deviceLabel} • Using Telegram's streaming infrastructure
+              Camera: {state.deviceLabel} • Professional streaming infrastructure
             </p>
           </div>
         </div>

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ExternalLink, MessageCircle, Users, Play, Youtube, Video } from 'lucide-react';
+import { Play, Users, Eye, Wifi } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -93,15 +93,61 @@ const TelegramStreaming: React.FC<TelegramStreamingProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Native Video Player for Live Stream */}
+      <div className="relative">
+        <div className="aspect-video bg-black rounded-lg overflow-hidden">
+          {isLive ? (
+            <div className="w-full h-full flex items-center justify-center">
+              {/* This would be the native video player using Telegram's stream URL */}
+              <div className="text-center text-white">
+                <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                  <Wifi className="h-8 w-8" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Live Stream Active</h3>
+                <p className="opacity-75">Multi-camera streaming powered by advanced infrastructure</p>
+              </div>
+            </div>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="text-center text-white">
+                <Play className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                <h3 className="text-xl font-semibold mb-2">Stream Starting Soon</h3>
+                <p className="opacity-75">Get ready for live multi-camera coverage</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Live Indicator */}
+        {isLive && (
+          <div className="absolute top-4 left-4">
+            <Badge variant="destructive" className="bg-red-600 animate-pulse">
+              <Wifi className="h-3 w-3 mr-1" />
+              LIVE
+            </Badge>
+          </div>
+        )}
+
+        {/* Viewer Count */}
+        <div className="absolute top-4 right-4 flex gap-2">
+          <Badge variant="secondary" className="bg-black/50 text-white">
+            <Eye className="h-3 w-3 mr-1" />
+            0 watching
+          </Badge>
+          <Badge variant="outline" className="bg-black/50 text-white border-white/20">
+            <Users className="h-3 w-3 mr-1" />
+            0 live
+          </Badge>
+        </div>
+      </div>
+
+      {/* Event Details Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageCircle className="h-5 w-5 text-blue-500" />
-            Telegram Live Stream
-          </CardTitle>
+          <CardTitle>{eventName}</CardTitle>
           <CardDescription>
-            Experience interactive live streaming through Telegram's infrastructure
+            Professional live streaming with multi-camera coverage
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -119,82 +165,33 @@ const TelegramStreaming: React.FC<TelegramStreamingProps> = ({
                 <span className="text-sm">
                   {isLive ? 'Live Now' : 'Not Live'}
                 </span>
-                {isLive && (
-                  <div className="flex gap-1 ml-2">
-                    <Badge variant="outline" className="text-xs">
-                      <MessageCircle className="h-3 w-3 mr-1" />
-                      Telegram
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      <Youtube className="h-3 w-3 mr-1" />
-                      YouTube
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      <Video className="h-3 w-3 mr-1" />
-                      Twitch
-                    </Badge>
-                  </div>
-                )}
               </div>
             </div>
 
             <div className="space-y-2">
-              <h4 className="font-medium">Multi-Platform Features</h4>
+              <h4 className="font-medium">Stream Features</h4>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Telegram live video streaming</li>
-                <li>• Real-time chat interaction</li>
-                <li>• Voice messages support</li>
-                <li>• Screen sharing capabilities</li>
-                <li>• Simultaneous YouTube streaming</li>
-                <li>• Simultaneous Twitch streaming</li>
-                <li>• Multi-device synchronization</li>
+                <li>• Professional multi-camera angles</li>
+                <li>• Real-time camera switching</li>
+                <li>• High-definition video quality</li>
+                <li>• Low-latency streaming</li>
+                <li>• Mobile-optimized viewing</li>
+                <li>• Interactive viewer experience</li>
               </ul>
             </div>
           </div>
 
-          <div className="border-t pt-4">
-            <div className="flex flex-col sm:flex-row gap-3">
-              {isDirector && (
-                <Button
-                  onClick={startTelegramStream}
-                  disabled={loading || isLive}
-                  className="flex-1"
-                >
-                  <Play className="h-4 w-4 mr-2" />
-                  {loading ? 'Starting...' : isLive ? 'Multi-Platform Active' : 'Start Multi-Platform Stream'}
-                </Button>
-              )}
-              
+          {isDirector && (
+            <div className="border-t pt-4">
               <Button
-                onClick={joinTelegramChannel}
-                variant="outline"
-                className="flex-1"
-                disabled={!telegramInviteLink}
+                onClick={startTelegramStream}
+                disabled={loading || isLive}
+                className="w-full sm:w-auto"
+                size="lg"
               >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Join Telegram Channel
+                <Play className="h-4 w-4 mr-2" />
+                {loading ? 'Starting Stream...' : isLive ? 'Stream Active' : 'Start Live Stream'}
               </Button>
-            </div>
-          </div>
-
-          {telegramInviteLink && (
-            <div className="bg-muted/50 p-3 rounded-lg">
-              <h5 className="font-medium text-sm mb-2">Multi-Platform Streaming:</h5>
-              <ol className="text-sm text-muted-foreground space-y-1">
-                <li>1. Click "Start Multi-Platform Stream" to begin</li>
-                <li>2. Stream goes live on Telegram, YouTube, and Twitch</li>
-                <li>3. Join the Telegram channel for interactive features</li>
-                <li>4. Viewers can watch on their preferred platform</li>
-                <li>5. Enjoy maximum reach and engagement!</li>
-              </ol>
-            </div>
-          )}
-
-          {!telegramInviteLink && (
-            <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
-              <p className="text-sm text-yellow-800">
-                Telegram channel is being set up. Please wait for the channel link to become available.
-              </p>
             </div>
           )}
         </CardContent>
