@@ -46,18 +46,17 @@ serve(async (req) => {
 
     const { action, eventId, title, description, streamId }: YouTubeStreamRequest = await req.json();
 
-    // Get user's profile with YouTube tokens
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('youtube_access_token, youtube_refresh_token, youtube_channel_id')
-      .eq('id', user.id)
-      .single();
+    // Get YouTube credentials from environment variables (centralized account)
+    const clientId = Deno.env.get('YOUTUBE_CLIENT_ID');
+    const clientSecret = Deno.env.get('YOUTUBE_CLIENT_SECRET');
+    let accessToken = Deno.env.get('YOUTUBE_ACCESS_TOKEN');
+    const refreshToken = Deno.env.get('YOUTUBE_REFRESH_TOKEN');
 
-    if (profileError || !profile?.youtube_access_token) {
+    if (!clientId || !clientSecret || !accessToken || !refreshToken) {
       return new Response(JSON.stringify({ 
-        error: 'YouTube account not connected. Please connect your YouTube account first.' 
+        error: 'YouTube credentials not configured in environment variables' 
       }), {
-        status: 400,
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
@@ -82,38 +81,40 @@ serve(async (req) => {
         ...options,
         headers: {
           ...options.headers,
-          'Authorization': `Bearer ${profile.youtube_access_token}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
       });
 
       // If token expired, try to refresh
-      if (response.status === 401 && profile.youtube_refresh_token) {
+      if (response.status === 401 && refreshToken) {
         console.log('YouTube token expired, refreshing...');
         
-        const refreshResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/youtube-auth`, {
+        const refreshResponse = await fetch('https://oauth2.googleapis.com/token', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': authHeader,
-          },
-          body: JSON.stringify({
-            action: 'refreshToken',
-            refreshToken: profile.youtube_refresh_token
-          })
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: clientId,
+            client_secret: clientSecret,
+            refresh_token: refreshToken,
+            grant_type: 'refresh_token',
+          }),
         });
 
         if (refreshResponse.ok) {
-          const refreshData = await refreshResponse.json();
-          profile.youtube_access_token = refreshData.accessToken;
+          const tokens = await refreshResponse.json();
+          accessToken = tokens.access_token;
+          console.log('Successfully refreshed YouTube access token');
           
           // Retry original request with new token
           response = await fetch(url, {
             ...options,
             headers: {
               ...options.headers,
-              'Authorization': `Bearer ${profile.youtube_access_token}`,
+              'Authorization': `Bearer ${accessToken}`,
             },
           });
+        } else {
+          throw new Error('Failed to refresh YouTube token');
         }
       }
 
