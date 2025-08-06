@@ -68,6 +68,7 @@ serve(async (req) => {
         streamOutputs.push({
           urls: [`rtmp://a.rtmp.youtube.com/live2/${youtubeKey}`]
         })
+        console.log('YouTube streaming configured with key:', youtubeKey.substring(0, 8) + '...')
       }
       
       if (twitchKey) {
