@@ -154,7 +154,7 @@ const JoinAsCamera = () => {
       
       toastService.success({
         title: "Event found!",
-        description: `Ready to join: ${data.name} (${data.streaming_type === 'telegram' ? 'Telegram' : 'RTMP'} streaming)`,
+        description: `Ready to join: ${data.name} (LiveKit streaming)`,
       });
     } catch (error) {
       console.error('Error validating event code:', error);
@@ -176,27 +176,7 @@ const JoinAsCamera = () => {
 
     setLoading(true);
     try {
-      // Check streaming type and handle accordingly
-      if (eventData.streaming_type === 'telegram') {
-        console.log('Connecting to Telegram event - redirecting to Telegram integration');
-        
-        // For Telegram events, navigate to a Telegram-specific camera page
-        toastService.success({
-          title: "Joining Telegram Event",
-          description: "Redirecting to Telegram streaming interface...",
-        });
-        
-        // Navigate to telegram camera interface
-        navigate(`/camera/telegram/${eventData.id}`, {
-          state: { 
-            eventData,
-            deviceLabel: deviceLabel.trim()
-          } 
-        });
-        return;
-      }
-      
-      // For LiveKit streaming, register camera
+      // All events now use LiveKit streaming
       console.log('Connecting to LiveKit event');
       
       // Register camera with backend for LiveKit streaming
@@ -336,15 +316,13 @@ const JoinAsCamera = () => {
                       <p><strong>Name:</strong> {eventData.name}</p>
                       <p><strong>Sport:</strong> {eventData.sport}</p>
                       <p><strong>Status:</strong> {eventData.status}</p>
-                      <p><strong>Streaming Type:</strong> {eventData.streaming_type === 'telegram' ? 'Telegram Integration' : 'Mobile RTMP'}</p>
+                      <p><strong>Streaming:</strong> LiveKit Multi-Camera</p>
                     </div>
-                    {eventData.streaming_type === 'telegram' && (
-                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <p className="text-sm text-blue-800">
-                          🔹 This event uses Telegram's streaming infrastructure for social features and multi-platform broadcasting.
-                        </p>
-                      </div>
-                    )}
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        🎥 This event uses LiveKit for professional multi-camera streaming with real-time switching and simulcast.
+                      </p>
+                    </div>
                   </div>
                 )}
 

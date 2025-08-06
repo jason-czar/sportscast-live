@@ -28,8 +28,7 @@ const CreateEvent = () => {
     eventName: "",
     sportType: "",
     dateTime: "",
-    expectedDuration: "180",
-    streamingType: ""
+    expectedDuration: "180"
   });
 
   // Set default datetime to current local time
@@ -77,9 +76,6 @@ const CreateEvent = () => {
       if (!formData.expectedDuration || parseInt(formData.expectedDuration) < 1) {
         throw new Error('Expected duration must be at least 1 minute');
       }
-      if (!formData.streamingType) {
-        throw new Error('Streaming type is required');
-      }
 
       // Generate unique event code
       const eventCode = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -95,7 +91,7 @@ const CreateEvent = () => {
           startTime: formData.dateTime,
           expectedDuration: parseInt(formData.expectedDuration),
           eventCode,
-          streamingType: formData.streamingType
+          streamingType: 'livekit' // Always use LiveKit now
         }
       });
 
@@ -208,38 +204,11 @@ const CreateEvent = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="streamingType">Streaming Type</Label>
-                <Select 
-                  value={formData.streamingType} 
-                  onValueChange={(value) => setFormData({...formData, streamingType: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select streaming approach" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mobile">Mobile Streaming (Direct RTMP)</SelectItem>
-                    <SelectItem value="telegram">Telegram Integration</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-sm text-muted-foreground">
-                  Choose how you want to stream your event. Mobile streaming uses direct RTMP for professional quality, while Telegram integration leverages Telegram's infrastructure.
-                </p>
-              </div>
-
               <div className="space-y-4">
                 <div className="p-4 bg-muted rounded-lg">
-                  <h3 className="text-sm font-medium text-muted-foreground">Live Streaming</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground">LiveKit Streaming</h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {formData.streamingType === 'mobile' && 
-                      'Events will use direct RTMP streaming for professional quality video transmission to YouTube and Twitch.'
-                    }
-                    {formData.streamingType === 'telegram' && 
-                      'Events will leverage Telegram\'s social features while simultaneously streaming to YouTube and Twitch for maximum reach and engagement.'
-                    }
-                    {!formData.streamingType && 
-                      'Select a streaming type above to see details about your streaming setup.'
-                    }
+                    Your event will use LiveKit for professional multi-camera streaming with real-time switching and simulcast to YouTube, Twitch, and other platforms.
                   </p>
                 </div>
               </div>
