@@ -62,15 +62,19 @@ serve(async (req) => {
       });
     }
 
-    // Get event details
-    const { data: event, error: eventError } = await supabase
-      .from('events')
-      .select('name, sport, start_time')
-      .eq('id', eventId)
-      .single();
+    // Get event details if eventId is not 'temp' (for event creation flow)
+    let event = null;
+    if (eventId !== 'temp') {
+      const { data: eventData, error: eventError } = await supabase
+        .from('events')
+        .select('name, sport, start_time')
+        .eq('id', eventId)
+        .single();
 
-    if (eventError || !event) {
-      throw new Error('Event not found');
+      if (eventError) {
+        throw new Error('Event not found');
+      }
+      event = eventData;
     }
 
     const makeYouTubeRequest = async (url: string, options: RequestInit) => {
@@ -117,8 +121,9 @@ serve(async (req) => {
     };
 
     if (action === 'createStream') {
-      const streamTitle = title || `${event.name} - Live ${event.sport}`;
-      const streamDescription = description || `Live streaming ${event.name} - ${event.sport} event. Join us for this exciting match!`;
+      const streamTitle = title || (event ? `${event.name} - Live ${event.sport}` : 'Live Stream');
+      const streamDescription = description || (event ? `Live streaming ${event.name} - ${event.sport} event. Join us for this exciting match!` : 'Live stream event');
+      const scheduledStartTime = event?.start_time || new Date().toISOString();
 
       // Create YouTube live broadcast
       const broadcastResponse = await makeYouTubeRequest(
@@ -132,7 +137,7 @@ serve(async (req) => {
             snippet: {
               title: streamTitle,
               description: streamDescription,
-              scheduledStartTime: event.start_time,
+              scheduledStartTime: scheduledStartTime,
             },
             status: {
               privacyStatus: 'public',
@@ -189,18 +194,20 @@ serve(async (req) => {
         throw new Error('Failed to bind YouTube broadcast to stream');
       }
 
-      // Update event with YouTube stream info
-      const { error: updateError } = await supabase
-        .from('events')
-        .update({
-          youtube_stream_key: stream.cdn.ingestionInfo.streamName,
-          youtube_broadcast_id: broadcast.id,
-          youtube_stream_id: stream.id
-        })
-        .eq('id', eventId);
+      // Update event with YouTube stream info only if it's not a temp event
+      if (eventId !== 'temp') {
+        const { error: updateError } = await supabase
+          .from('events')
+          .update({
+            youtube_stream_key: stream.cdn.ingestionInfo.streamName,
+            youtube_broadcast_id: broadcast.id,
+            youtube_stream_id: stream.id
+          })
+          .eq('id', eventId);
 
-      if (updateError) {
-        console.error('Failed to update event with YouTube info:', updateError);
+        if (updateError) {
+          console.error('Failed to update event with YouTube info:', updateError);
+        }
       }
 
       return new Response(JSON.stringify({

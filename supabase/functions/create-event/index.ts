@@ -46,6 +46,15 @@ serve(async (req) => {
       throw new Error('Missing required fields: name, sport, startTime, expectedDuration, eventCode, and streamingType are required');
     }
 
+    // Check if user has YouTube connected for automatic stream creation
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('youtube_access_token, youtube_channel_id')
+      .eq('id', user.id)
+      .single();
+
+    const hasYouTubeConnected = userProfile?.youtube_access_token && userProfile?.youtube_channel_id;
+
     let telegramChannelData = null;
 
     // Handle Telegram integration if selected
@@ -130,6 +139,39 @@ serve(async (req) => {
     // If event starts within 5 minutes, mark as live. Otherwise scheduled.
     const initialStatus = timeDiffMinutes <= 5 ? 'live' : 'scheduled';
 
+    // Create YouTube live stream if user has YouTube connected
+    let youtubeStreamData = null;
+    if (hasYouTubeConnected) {
+      console.log('Creating YouTube live stream for event...');
+      try {
+        const youtubeResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/youtube-stream`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            action: 'createStream',
+            eventId: 'temp', // We'll update this after event creation
+            title: `${name} - Live ${sport}`,
+            description: `Live streaming ${name} - ${sport} event. Join us for this exciting match!`
+          })
+        });
+
+        if (youtubeResponse.ok) {
+          youtubeStreamData = await youtubeResponse.json();
+          console.log('YouTube stream created:', youtubeStreamData.broadcast?.id);
+        } else {
+          const errorText = await youtubeResponse.text();
+          console.warn('YouTube stream creation failed:', errorText);
+          // Don't fail the whole operation, just proceed without YouTube
+        }
+      } catch (error) {
+        console.error('Error creating YouTube stream:', error);
+        // Don't fail the whole operation, just proceed without YouTube
+      }
+    }
+
     // Insert event into database
     const { data: eventData, error: dbError } = await supabase
       .from('events')
@@ -147,7 +189,10 @@ serve(async (req) => {
         owner_id: user.id,
         streaming_type: streamingType,
         telegram_channel_id: telegramChannelData?.channelId || null,
-        telegram_invite_link: telegramChannelData?.inviteLink || null
+        telegram_invite_link: telegramChannelData?.inviteLink || null,
+        youtube_broadcast_id: youtubeStreamData?.broadcast?.id || null,
+        youtube_stream_id: youtubeStreamData?.stream?.id || null,
+        youtube_stream_key: youtubeStreamData?.stream?.streamName || null
       })
       .select()
       .single();
@@ -188,7 +233,13 @@ serve(async (req) => {
         eventCode,
         streamId: muxData.data.id,
         programUrl: eventData.program_url,
-        telegramChannel: telegramChannelData
+        telegramChannel: telegramChannelData,
+        youtubeStream: youtubeStreamData ? {
+          broadcastId: youtubeStreamData.broadcast?.id,
+          watchUrl: youtubeStreamData.broadcast?.watchUrl,
+          streamKey: youtubeStreamData.stream?.streamName
+        } : null,
+        hasYouTubeConnected
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
