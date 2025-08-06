@@ -122,6 +122,14 @@ serve(async (req) => {
     const muxData = await muxResponse.json();
     console.log('Mux stream created:', muxData.data.id);
 
+    // Determine initial status based on start time
+    const startDateTime = new Date(startTime);
+    const now = new Date();
+    const timeDiffMinutes = (startDateTime.getTime() - now.getTime()) / (1000 * 60);
+    
+    // If event starts within 5 minutes, mark as live. Otherwise scheduled.
+    const initialStatus = timeDiffMinutes <= 5 ? 'live' : 'scheduled';
+
     // Insert event into database
     const { data: eventData, error: dbError } = await supabase
       .from('events')
@@ -135,7 +143,7 @@ serve(async (req) => {
         program_url: streamingType === 'telegram' && telegramChannelData
           ? `https://t.me/${telegramChannelData.channelUsername}`
           : muxData.data.playback_ids[0]?.url || null,
-        status: 'scheduled',
+        status: initialStatus,
         owner_id: user.id,
         streaming_type: streamingType,
         telegram_channel_id: telegramChannelData?.channelId || null,

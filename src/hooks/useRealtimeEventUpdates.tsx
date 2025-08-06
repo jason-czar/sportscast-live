@@ -201,27 +201,10 @@ export const useRealtimeEventUpdates = ({
     loadEventData();
     loadCameras();
 
-    // Create optimized channels with error handling
-    const eventChannel = createChannel(`event_updates_${eventId}`, {
-      config: {
-        presence: { key: 'event_subscriber' },
-        broadcast: { self: false }
-      }
-    });
-
-    const cameraChannel = createChannel(`camera_updates_${eventId}`, {
-      config: {
-        presence: { key: 'camera_subscriber' },
-        broadcast: { self: false }
-      }
-    });
-
-    const switchChannel = createChannel(`switch_logs_${eventId}`, {
-      config: {
-        presence: { key: 'switch_subscriber' },
-        broadcast: { self: false }
-      }
-    });
+    // Create real-time channels
+    const eventChannel = supabase.channel(`event_updates_${eventId}`);
+    const cameraChannel = supabase.channel(`camera_updates_${eventId}`);
+    const switchChannel = supabase.channel(`switch_logs_${eventId}`);
 
     // Subscribe to real-time updates with enhanced error handling
     eventChannel
@@ -255,9 +238,9 @@ export const useRealtimeEventUpdates = ({
       });
 
     return () => {
-      removeChannel(`event_updates_${eventId}`);
-      removeChannel(`camera_updates_${eventId}`);
-      removeChannel(`switch_logs_${eventId}`);
+      supabase.removeChannel(eventChannel);
+      supabase.removeChannel(cameraChannel);
+      supabase.removeChannel(switchChannel);
     };
   }, [eventId, loadEventData, loadCameras, handleEventUpdate, handleCameraUpdate, handleCameraSwitch, createChannel, removeChannel]);
 
