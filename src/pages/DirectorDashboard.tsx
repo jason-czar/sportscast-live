@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import LoadingButton from "@/components/ui/LoadingButton";
 import LoadingSkeleton from "@/components/ui/LoadingSkeleton";
@@ -16,7 +16,8 @@ import { Play, Square, Users, Wifi, WifiOff, Monitor, Settings, Eye, Youtube, Tw
 import { useRealtimePresence } from "@/hooks/useRealtimePresence";
 import { useRealtimeEventUpdates } from "@/hooks/useRealtimeEventUpdates";
 import { useRealtimeCleanup } from "@/hooks/useRealtimeCleanup";
-import CameraCard from "@/components/CameraCard";
+import { useLiveKitRoom } from "@/hooks/useLiveKitRoom";
+import { LiveCameraCard } from "@/components/LiveCameraCard";
 import EventHeader from "@/components/EventHeader";
 import EventQRCode from "@/components/EventQRCode";
 import AppHeader from "@/components/AppHeader";
@@ -48,8 +49,9 @@ const DirectorDashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentUserId] = useState(`director_${Math.random().toString(36).substr(2, 9)}`);
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
+  const [activeCameraIdentity, setActiveCameraIdentity] = useState<string | null>(null);
   
-  // Use real-time hooks
+  // Use real-time hooks for database updates
   const { viewerCount } = useRealtimePresence({ 
     eventId: eventId || '', 
     userId: currentUserId 
@@ -65,42 +67,93 @@ const DirectorDashboard = () => {
     enabled: true,
     interval: 30000 // Clean up every 30 seconds
   });
+
+  // LiveKit room integration for director
+  const {
+    room,
+    isConnecting: roomConnecting,
+    isConnected: roomConnected,
+    error: roomError,
+    participants,
+    connectToRoom,
+    disconnectFromRoom,
+    sendDataMessage,
+    getParticipantVideoTracks
+  } = useLiveKitRoom({
+    eventId: eventId || '',
+    participantName: 'Director',
+    participantIdentity: `director_${currentUserId}`,
+    autoConnect: false
+  });
+
+  // Get video tracks for camera participants
+  const videoTracks = useMemo(() => {
+    return getParticipantVideoTracks();
+  }, [getParticipantVideoTracks]);
+
+  // Filter camera participants (exclude director)
+  const cameraParticipants = useMemo(() => {
+    return participants.filter(p => 
+      p.identity.startsWith('camera_') && !p.identity.includes('director')
+    );
+  }, [participants]);
   
   
+  // Auto-connect to LiveKit room when event is loaded
+  useEffect(() => {
+    if (event && !roomConnected && !roomConnecting) {
+      console.log('Auto-connecting director to LiveKit room:', eventId);
+      connectToRoom();
+    }
+  }, [event, roomConnected, roomConnecting, connectToRoom, eventId]);
 
-
-
-  const handleCameraSelect = useCallback((cameraId: string) => {
-    setSelectedCameraId(cameraId);
+  // Handle camera selection from LiveKit participants
+  const handleCameraSelect = useCallback((participantIdentity: string) => {
+    setSelectedCameraId(participantIdentity);
+    console.log('Selected camera participant:', participantIdentity);
   }, []);
 
-  const setActiveCamera = useCallback(async (cameraId: string) => {
+  // Set active camera and notify through LiveKit data channel
+  const setActiveCamera = useCallback(async (participantIdentity: string) => {
     try {
-      // First, deactivate all cameras
-      await supabase
-        .from('cameras')
-        .update({ is_active: false })
-        .eq('event_id', eventId);
-
-      // Then activate the selected camera
-      const { error } = await supabase
-        .from('cameras')
-        .update({ is_active: true })
-        .eq('id', cameraId);
-
-      if (error) throw error;
-
-      // Call edge function to switch camera and log the switch
-      await supabase.functions.invoke('switch-camera', {
-        body: { eventId, cameraId }
+      setActiveCameraIdentity(participantIdentity);
+      
+      // Send layout update through LiveKit data channel
+      await sendDataMessage({
+        type: 'layout_update',
+        activeCamera: participantIdentity,
+        timestamp: Date.now()
       });
 
-      // Set this camera as selected for the main feed
-      setSelectedCameraId(cameraId);
+      // Also update database for persistence
+      const cameraRecord = cameras.find(cam => 
+        cam.device_label.toLowerCase().replace(/\s+/g, '_') === participantIdentity.replace('camera_', '')
+      );
 
-      const activeCamera = cameras.find(cam => cam.id === cameraId);
-      if (activeCamera) {
-        toastService.event.cameraSwitched(activeCamera.device_label);
+      if (cameraRecord) {
+        // Deactivate all cameras first
+        await supabase
+          .from('cameras')
+          .update({ is_active: false })
+          .eq('event_id', eventId);
+
+        // Activate selected camera
+        await supabase
+          .from('cameras')
+          .update({ is_active: true })
+          .eq('id', cameraRecord.id);
+
+        // Log the switch
+        await supabase.functions.invoke('switch-camera', {
+          body: { eventId, cameraId: cameraRecord.id }
+        });
+      }
+
+      setSelectedCameraId(participantIdentity);
+      
+      const participant = participants.find(p => p.identity === participantIdentity);
+      if (participant) {
+        toastService.event.cameraSwitched(participant.metadata || participantIdentity);
       }
     } catch (error) {
       console.error('Error switching camera:', error);
@@ -108,7 +161,7 @@ const DirectorDashboard = () => {
         description: "Failed to switch camera. Please try again.",
       });
     }
-  }, [eventId, cameras]);
+  }, [eventId, cameras, participants, sendDataMessage]);
 
   const startStream = useCallback(async () => {
     try {
@@ -225,6 +278,31 @@ const DirectorDashboard = () => {
       <AppHeader />
       <div className="p-4">
         <div className="max-w-7xl mx-auto space-y-6">
+        
+        {/* Connection Status */}
+        {event && (
+          <Card>
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${roomConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <span className="text-sm font-medium">
+                    LiveKit Status: {roomConnected ? 'Connected' : roomConnecting ? 'Connecting...' : 'Disconnected'}
+                  </span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {cameraParticipants.length} camera(s) connected
+                </div>
+              </div>
+              {roomError && (
+                <div className="mt-2 text-sm text-destructive">
+                  Error: {roomError}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Event Header */}
         {event && (
           <EventHeader
@@ -235,7 +313,7 @@ const DirectorDashboard = () => {
             onStartStream={startStream}
             onEndStream={endStream}
             onAddSimulcast={addSimulcastTargets}
-            cameraCount={cameras.length}
+            cameraCount={cameraParticipants.length}
           />
         )}
 
@@ -251,7 +329,7 @@ const DirectorDashboard = () => {
             </div>
           )}
           
-          {/* Camera Grid */}
+          {/* Live Camera Grid */}
           <div className="lg:col-span-3 space-y-4">
             {/* Main Program Feed Display */}
             {selectedCameraId && (
@@ -262,28 +340,33 @@ const DirectorDashboard = () => {
                     Live Program Feed
                   </CardTitle>
                   <CardDescription>
-                    Currently showing: {cameras.find(c => c.id === selectedCameraId)?.device_label}
+                    Currently showing: {
+                      participants.find(p => p.identity === selectedCameraId)?.metadata || 
+                      selectedCameraId.replace('camera_', '').replace(/_/g, ' ')
+                    }
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="aspect-video bg-black rounded-lg flex items-center justify-center relative overflow-hidden">
-                    {event?.program_url ? (
+                    {videoTracks.get(selectedCameraId) ? (
                       <video
                         className="w-full h-full object-cover"
-                        src={event.program_url}
+                        ref={(video) => {
+                          if (video && videoTracks.get(selectedCameraId)) {
+                            videoTracks.get(selectedCameraId)!.attach(video);
+                          }
+                        }}
                         autoPlay
                         muted
                         playsInline
-                        controls={false}
-                        onError={(e) => {
-                          console.error('Video playback error:', e);
-                        }}
                       />
                     ) : (
                       <div className="text-white text-center">
                         <Monitor className="h-16 w-16 mx-auto mb-4 opacity-50" />
                         <p className="text-lg font-medium">Program Feed</p>
-                        <p className="text-sm opacity-75">Start streaming to see live video</p>
+                        <p className="text-sm opacity-75">
+                          {roomConnected ? 'Select a camera to see live video' : 'Connecting to LiveKit...'}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -294,11 +377,21 @@ const DirectorDashboard = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold flex items-center gap-2">
                 <Users className="h-6 w-6" />
-                Connected Cameras ({cameras.length}/8)
+                Live Cameras ({cameraParticipants.length})
               </h2>
             </div>
 
-            {cameras.length === 0 ? (
+            {!roomConnected ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <LoadingSpinner className="mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Connecting to LiveKit</h3>
+                  <p className="text-muted-foreground">
+                    Establishing real-time connection for live camera feeds...
+                  </p>
+                </CardContent>
+              </Card>
+            ) : cameraParticipants.length === 0 ? (
               <Card>
                 <CardContent className="text-center py-12">
                   <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
@@ -310,13 +403,15 @@ const DirectorDashboard = () => {
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {cameras.map((camera) => (
-                  <CameraCard
-                    key={camera.id}
-                    camera={camera}
-                    onActivate={setActiveCamera}
-                    onSelect={handleCameraSelect}
-                    isSelected={selectedCameraId === camera.id}
+                {cameraParticipants.map((participant) => (
+                  <LiveCameraCard
+                    key={participant.identity}
+                    participant={participant}
+                    videoTrack={videoTracks.get(participant.identity) || null}
+                    isSelected={selectedCameraId === participant.identity}
+                    isActive={activeCameraIdentity === participant.identity}
+                    onSelect={() => handleCameraSelect(participant.identity)}
+                    onActivate={() => setActiveCamera(participant.identity)}
                   />
                 ))}
               </div>
