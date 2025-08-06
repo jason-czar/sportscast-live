@@ -76,7 +76,6 @@ export type Database = {
           streaming_type: string | null
           telegram_channel_id: string | null
           telegram_invite_link: string | null
-          twitch_stream_key: string | null
           updated_at: string
           viewer_count: number | null
           youtube_stream_key: string | null
@@ -98,7 +97,6 @@ export type Database = {
           streaming_type?: string | null
           telegram_channel_id?: string | null
           telegram_invite_link?: string | null
-          twitch_stream_key?: string | null
           updated_at?: string
           viewer_count?: number | null
           youtube_stream_key?: string | null
@@ -120,7 +118,6 @@ export type Database = {
           streaming_type?: string | null
           telegram_channel_id?: string | null
           telegram_invite_link?: string | null
-          twitch_stream_key?: string | null
           updated_at?: string
           viewer_count?: number | null
           youtube_stream_key?: string | null
