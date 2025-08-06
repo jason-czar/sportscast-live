@@ -92,9 +92,21 @@ export function LiveKitCameraStream({
 
   const registerCameraInDatabase = async () => {
     try {
+      // First get the event to retrieve the event code
+      const { data: eventData, error: eventError } = await supabase
+        .from('events')
+        .select('event_code')
+        .eq('id', eventId)
+        .single();
+
+      if (eventError || !eventData) {
+        throw new Error('Could not find event');
+      }
+
       const { error } = await supabase.functions.invoke('register-camera', {
         body: {
           eventId,
+          eventCode: eventData.event_code,
           deviceLabel,
           identity: cameraIdentity
         }
@@ -215,23 +227,23 @@ export function LiveKitCameraStream({
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+        <CardTitle className="flex items-center justify-between text-sm sm:text-base">
           <span>{deviceLabel} - LiveKit Camera</span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {isConnected && (
-              <Badge variant="default" className="bg-green-600">
+              <Badge variant="default" className="bg-green-600 text-xs">
                 <Signal className="w-3 h-3 mr-1" />
                 CONNECTED
               </Badge>
             )}
             {isConnecting && (
-              <Badge variant="secondary">
+              <Badge variant="secondary" className="text-xs">
                 <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                 Connecting
               </Badge>
             )}
             {participants.length > 0 && (
-              <Badge variant="outline">
+              <Badge variant="outline" className="text-xs">
                 <Users className="w-3 h-3 mr-1" />
                 {participants.length} participants
               </Badge>
@@ -240,8 +252,8 @@ export function LiveKitCameraStream({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Video Preview */}
-        <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
+        {/* Video Preview - Larger on mobile */}
+        <div className="relative aspect-video bg-muted rounded-lg overflow-hidden h-48 sm:h-64 md:h-80">
           <video
             ref={videoRef}
             autoPlay
@@ -251,35 +263,39 @@ export function LiveKitCameraStream({
           />
           {!isVideoEnabled && (
             <div className="absolute inset-0 bg-muted flex items-center justify-center">
-              <VideoOff className="w-12 h-12 text-muted-foreground" />
+              <VideoOff className="w-8 h-8 sm:w-12 sm:h-12 text-muted-foreground" />
             </div>
           )}
         </div>
 
-        {/* Controls */}
-        <div className="flex justify-between items-center">
+        {/* Controls - Mobile optimized */}
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0">
           <div className="flex gap-2">
             <Button
               variant={isVideoEnabled ? "default" : "secondary"}
               size="sm"
               onClick={toggleVideo}
+              className="flex items-center gap-1"
             >
               {isVideoEnabled ? (
                 <Video className="w-4 h-4" />
               ) : (
                 <VideoOff className="w-4 h-4" />
               )}
+              <span className="hidden sm:inline">Video</span>
             </Button>
             <Button
               variant={isAudioEnabled ? "default" : "secondary"}
               size="sm"
               onClick={toggleAudio}
+              className="flex items-center gap-1"
             >
               {isAudioEnabled ? (
                 <Mic className="w-4 h-4" />
               ) : (
                 <MicOff className="w-4 h-4" />
               )}
+              <span className="hidden sm:inline">Audio</span>
             </Button>
           </div>
 
@@ -287,6 +303,7 @@ export function LiveKitCameraStream({
             onClick={isConnected ? stopStreaming : startStreaming}
             disabled={isConnecting || !cameraRegistered}
             variant={isConnected ? "destructive" : "default"}
+            className="w-full sm:w-auto text-sm"
           >
             {isConnecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {isConnected ? "Stop Streaming" : 
