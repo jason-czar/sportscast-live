@@ -19,6 +19,7 @@ import { LiveKitCameraPage } from "./pages/LiveKitCameraPage";
 import DirectorDashboard from "./pages/DirectorDashboard";
 import ViewerPage from "./pages/ViewerPage";
 import UserProfile from "./pages/UserProfile";
+import { YouTubeCallback } from "./pages/YouTubeCallback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -112,6 +113,14 @@ const App = () => {
                     <ProtectedRoute>
                       <UserProfile />
                     </ProtectedRoute>
+                  </ErrorBoundary>
+                } 
+              />
+              <Route 
+                path="/auth/youtube/callback" 
+                element={
+                  <ErrorBoundary>
+                    <YouTubeCallback />
                   </ErrorBoundary>
                 } 
               />

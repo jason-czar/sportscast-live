@@ -78,6 +78,8 @@ export type Database = {
           telegram_invite_link: string | null
           updated_at: string
           viewer_count: number | null
+          youtube_broadcast_id: string | null
+          youtube_stream_id: string | null
           youtube_stream_key: string | null
         }
         Insert: {
@@ -99,6 +101,8 @@ export type Database = {
           telegram_invite_link?: string | null
           updated_at?: string
           viewer_count?: number | null
+          youtube_broadcast_id?: string | null
+          youtube_stream_id?: string | null
           youtube_stream_key?: string | null
         }
         Update: {
@@ -120,6 +124,8 @@ export type Database = {
           telegram_invite_link?: string | null
           updated_at?: string
           viewer_count?: number | null
+          youtube_broadcast_id?: string | null
+          youtube_stream_id?: string | null
           youtube_stream_key?: string | null
         }
         Relationships: []
@@ -132,6 +138,10 @@ export type Database = {
           full_name: string | null
           id: string
           updated_at: string
+          youtube_access_token: string | null
+          youtube_channel_id: string | null
+          youtube_channel_title: string | null
+          youtube_refresh_token: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -140,6 +150,10 @@ export type Database = {
           full_name?: string | null
           id: string
           updated_at?: string
+          youtube_access_token?: string | null
+          youtube_channel_id?: string | null
+          youtube_channel_title?: string | null
+          youtube_refresh_token?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -148,6 +162,10 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string
+          youtube_access_token?: string | null
+          youtube_channel_id?: string | null
+          youtube_channel_title?: string | null
+          youtube_refresh_token?: string | null
         }
         Relationships: []
       }

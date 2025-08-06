@@ -88,3 +88,9 @@ verify_jwt = false
 
 [functions.livekit-token]
 verify_jwt = false
+
+[functions.youtube-auth]
+verify_jwt = true
+
+[functions.youtube-stream]
+verify_jwt = true
