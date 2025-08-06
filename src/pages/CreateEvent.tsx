@@ -16,12 +16,17 @@ import { Loader2, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppHeader from "@/components/AppHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
-
 const CreateEvent = () => {
   const navigate = useNavigate();
-  const { session } = useAuth();
-  const { handleAsyncError } = useErrorHandler();
-  const { isOnline } = useOnlineStatus();
+  const {
+    session
+  } = useAuth();
+  const {
+    handleAsyncError
+  } = useErrorHandler();
+  const {
+    isOnline
+  } = useOnlineStatus();
   const isMobile = useIsMobile();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -41,22 +46,24 @@ const CreateEvent = () => {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const localDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
-    setFormData(prev => ({ ...prev, dateTime: localDateTime }));
+    setFormData(prev => ({
+      ...prev,
+      dateTime: localDateTime
+    }));
   }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!isOnline) {
       toastService.error({
         description: 'Cannot create event while offline. Please check your connection.'
       });
       return;
     }
-    
     setLoading(true);
-
-    const { data, error } = await handleAsyncError(async () => {
+    const {
+      data,
+      error
+    } = await handleAsyncError(async () => {
       if (!session) {
         toastService.auth.sessionExpired();
         navigate('/auth');
@@ -79,9 +86,12 @@ const CreateEvent = () => {
 
       // Generate unique event code
       const eventCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-      
+
       // Call Supabase edge function to create event with Mux stream
-      const { data, error } = await supabase.functions.invoke('create-event', {
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('create-event', {
         headers: {
           Authorization: `Bearer ${session.access_token}`
         },
@@ -94,25 +104,22 @@ const CreateEvent = () => {
           streamingType: 'livekit' // Always use LiveKit now
         }
       });
-
       if (error) throw error;
-
       toastService.event.created(eventCode);
-      return { eventId: data.eventId, eventCode };
+      return {
+        eventId: data.eventId,
+        eventCode
+      };
     }, {
       title: "Failed to create event",
       fallbackMessage: "Unable to create event. Please check your input and try again."
     });
-
     if (data?.eventId) {
       navigate(`/director/${data.eventId}`);
     }
-    
     setLoading(false);
   };
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       <AppHeader />
       <div className="p-4">
         <div className="max-w-2xl mx-auto">
@@ -127,21 +134,18 @@ const CreateEvent = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="eventName">Event Name</Label>
-                <Input
-                  id="eventName"
-                  value={formData.eventName}
-                  onChange={(e) => setFormData({...formData, eventName: e.target.value})}
-                  placeholder="Championship Soccer Match"
-                  required
-                />
+                <Input id="eventName" value={formData.eventName} onChange={e => setFormData({
+                  ...formData,
+                  eventName: e.target.value
+                })} placeholder="Championship Soccer Match" required />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="sportType">Sport Type</Label>
-                <Select 
-                  value={formData.sportType} 
-                  onValueChange={(value) => setFormData({...formData, sportType: value})}
-                >
+                <Select value={formData.sportType} onValueChange={value => setFormData({
+                  ...formData,
+                  sportType: value
+                })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select sport" />
                   </SelectTrigger>
@@ -161,30 +165,23 @@ const CreateEvent = () => {
                 <div className="space-y-2">
                   <Label htmlFor="dateTime">Start Date & Time</Label>
                   <div className="flex gap-2">
-                    <Input
-                      id="dateTime"
-                      type="datetime-local"
-                      value={formData.dateTime}
-                      onChange={(e) => setFormData({...formData, dateTime: e.target.value})}
-                      required
-                      className="flex-1 min-w-0"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const now = new Date();
-                        const year = now.getFullYear();
-                        const month = String(now.getMonth() + 1).padStart(2, '0');
-                        const day = String(now.getDate()).padStart(2, '0');
-                        const hours = String(now.getHours()).padStart(2, '0');
-                        const minutes = String(now.getMinutes()).padStart(2, '0');
-                        const localDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
-                        setFormData({...formData, dateTime: localDateTime});
-                      }}
-                      className="whitespace-nowrap"
-                    >
+                    <Input id="dateTime" type="datetime-local" value={formData.dateTime} onChange={e => setFormData({
+                      ...formData,
+                      dateTime: e.target.value
+                    })} required className="flex-1 min-w-0" />
+                    <Button type="button" variant="outline" size="sm" onClick={() => {
+                      const now = new Date();
+                      const year = now.getFullYear();
+                      const month = String(now.getMonth() + 1).padStart(2, '0');
+                      const day = String(now.getDate()).padStart(2, '0');
+                      const hours = String(now.getHours()).padStart(2, '0');
+                      const minutes = String(now.getMinutes()).padStart(2, '0');
+                      const localDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+                      setFormData({
+                        ...formData,
+                        dateTime: localDateTime
+                      });
+                    }} className="whitespace-nowrap">
                       Set to Now
                     </Button>
                   </div>
@@ -192,25 +189,15 @@ const CreateEvent = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="expectedDuration">Duration (minutes)</Label>
-                  <Input
-                    id="expectedDuration"
-                    type="number"
-                    value={formData.expectedDuration}
-                    onChange={(e) => setFormData({...formData, expectedDuration: e.target.value})}
-                    placeholder="180"
-                    min="1"
-                    required
-                  />
+                  <Input id="expectedDuration" type="number" value={formData.expectedDuration} onChange={e => setFormData({
+                    ...formData,
+                    expectedDuration: e.target.value
+                  })} placeholder="180" min="1" required />
                 </div>
               </div>
 
               <div className="space-y-4">
-                <div className="p-4 bg-muted rounded-lg">
-                  <h3 className="text-sm font-medium text-muted-foreground">LiveKit Streaming</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Your event will use LiveKit for professional multi-camera streaming with real-time switching and simulcast to YouTube, Twitch, and other platforms.
-                  </p>
-                </div>
+                
               </div>
 
               <div className={`flex gap-4 ${isMobile ? 'flex-col' : ''}`}>
@@ -220,13 +207,7 @@ const CreateEvent = () => {
                     Back to Home
                   </Link>
                 </Button>
-                <LoadingButton 
-                  type="submit" 
-                  className="flex-1"
-                  loading={loading}
-                  loadingText="Creating Event..."
-                  disabled={!isOnline}
-                >
+                <LoadingButton type="submit" className="flex-1" loading={loading} loadingText="Creating Event..." disabled={!isOnline}>
                   {!isOnline ? 'Offline - Cannot Create Event' : 'Create Event'}
                 </LoadingButton>
               </div>
@@ -235,8 +216,6 @@ const CreateEvent = () => {
         </Card>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default CreateEvent;
