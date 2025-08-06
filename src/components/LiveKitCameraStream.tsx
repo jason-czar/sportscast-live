@@ -1,10 +1,12 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Video, VideoOff, Mic, MicOff, Loader2 } from 'lucide-react';
-import { useLiveKitStreaming } from '@/hooks/useLiveKitStreaming';
+import { Video, VideoOff, Mic, MicOff, Loader2, Users, Signal } from 'lucide-react';
+import { useLiveKitRoom } from '@/hooks/useLiveKitRoom';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { Track } from 'livekit-client';
 
 interface LiveKitCameraStreamProps {
   eventId: string;
@@ -21,28 +23,42 @@ export function LiveKitCameraStream({
 }: LiveKitCameraStreamProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const pcRef = useRef<RTCPeerConnection | null>(null);
   
-  const [isStreamActive, setIsStreamActive] = useState(false);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [cameraRegistered, setCameraRegistered] = useState(false);
+
+  // Generate camera identity
+  const cameraIdentity = `camera_${deviceLabel.toLowerCase().replace(/\s+/g, '_')}`;
   
-  const { 
-    createIngress, 
-    isConnecting, 
-    ingestUrl, 
-    streamKey, 
-    error 
-  } = useLiveKitStreaming();
+  const {
+    room,
+    isConnecting,
+    isConnected,
+    error: roomError,
+    participants,
+    connectToRoom,
+    disconnectFromRoom,
+    localParticipant
+  } = useLiveKitRoom({
+    eventId,
+    participantName: deviceLabel,
+    participantIdentity: cameraIdentity,
+    autoConnect: false
+  });
   
   const { toast } = useToast();
 
-  // Initialize camera preview
+  // Initialize camera and register with database
   useEffect(() => {
     const initializeCamera = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 1280, height: 720 },
+          video: { 
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            frameRate: { ideal: 30 }
+          },
           audio: true
         });
         
@@ -50,6 +66,10 @@ export function LiveKitCameraStream({
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
+
+        // Register camera in database
+        await registerCameraInDatabase();
+        
       } catch (error) {
         console.error('Failed to access camera:', error);
         toast({
@@ -66,11 +86,36 @@ export function LiveKitCameraStream({
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
-      if (pcRef.current) {
-        pcRef.current.close();
-      }
+      disconnectFromRoom();
     };
-  }, [toast]);
+  }, [eventId, deviceLabel]);
+
+  const registerCameraInDatabase = async () => {
+    try {
+      const { error } = await supabase.functions.invoke('register-camera', {
+        body: {
+          eventId,
+          deviceLabel,
+          identity: cameraIdentity
+        }
+      });
+
+      if (error) throw error;
+      
+      setCameraRegistered(true);
+      toast({
+        title: "Camera Registered",
+        description: `${deviceLabel} is ready to stream`,
+      });
+    } catch (error) {
+      console.error('Failed to register camera:', error);
+      toast({
+        title: "Registration Failed",
+        description: "Failed to register camera with event",
+        variant: "destructive",
+      });
+    }
+  };
 
   const startStreaming = async () => {
     try {
@@ -78,53 +123,38 @@ export function LiveKitCameraStream({
         throw new Error('No media stream available');
       }
 
-      // Create LiveKit ingress
-      const { ingestUrl: whipUrl } = await createIngress({
-        eventId,
-        deviceLabel
-      });
-
-      // Create WebRTC peer connection for WHIP
-      const pc = new RTCPeerConnection({
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-      });
-
-      pcRef.current = pc;
-
-      // Add tracks to peer connection
-      streamRef.current.getTracks().forEach(track => {
-        pc.addTrack(track, streamRef.current!);
-      });
-
-      // Create offer
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-
-      // Send offer to WHIP endpoint
-      const response = await fetch(whipUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/sdp'
-        },
-        body: offer.sdp
-      });
-
-      if (!response.ok) {
-        throw new Error(`WHIP request failed: ${response.statusText}`);
+      if (!cameraRegistered) {
+        throw new Error('Camera not registered. Please wait for registration to complete.');
       }
 
-      const answerSdp = await response.text();
-      await pc.setRemoteDescription({
-        type: 'answer',
-        sdp: answerSdp
-      });
+      // Connect to LiveKit room
+      await connectToRoom();
 
-      setIsStreamActive(true);
+      // Publish video and audio tracks
+      if (room && localParticipant) {
+        const videoTrack = streamRef.current.getVideoTracks()[0];
+        const audioTrack = streamRef.current.getAudioTracks()[0];
+        
+        if (videoTrack) {
+          await localParticipant.publishTrack(videoTrack, {
+            name: 'camera',
+            source: Track.Source.Camera
+          });
+        }
+        
+        if (audioTrack) {
+          await localParticipant.publishTrack(audioTrack, {
+            name: 'microphone',
+            source: Track.Source.Microphone
+          });
+        }
+      }
+
       onStreamStart?.();
       
       toast({
         title: "Streaming Started",
-        description: "Camera feed is now live",
+        description: "Camera feed is now live in LiveKit room",
       });
 
     } catch (error) {
@@ -139,12 +169,18 @@ export function LiveKitCameraStream({
 
   const stopStreaming = async () => {
     try {
-      if (pcRef.current) {
-        pcRef.current.close();
-        pcRef.current = null;
+      // Unpublish all tracks and disconnect from room
+      if (localParticipant) {
+        const publications = localParticipant.trackPublications;
+        for (const publication of publications.values()) {
+          if (publication.track) {
+            localParticipant.unpublishTrack(publication.track);
+          }
+        }
       }
       
-      setIsStreamActive(false);
+      await disconnectFromRoom();
+      
       onStreamStop?.();
       
       toast({
@@ -180,17 +216,24 @@ export function LiveKitCameraStream({
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>{deviceLabel} - LiveKit Stream</span>
+          <span>{deviceLabel} - LiveKit Camera</span>
           <div className="flex items-center gap-2">
-            {isStreamActive && (
-              <Badge variant="destructive" className="animate-pulse">
-                LIVE
+            {isConnected && (
+              <Badge variant="default" className="bg-green-600">
+                <Signal className="w-3 h-3 mr-1" />
+                CONNECTED
               </Badge>
             )}
             {isConnecting && (
               <Badge variant="secondary">
                 <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                 Connecting
+              </Badge>
+            )}
+            {participants.length > 0 && (
+              <Badge variant="outline">
+                <Users className="w-3 h-3 mr-1" />
+                {participants.length} participants
               </Badge>
             )}
           </div>
@@ -241,27 +284,33 @@ export function LiveKitCameraStream({
           </div>
 
           <Button
-            onClick={isStreamActive ? stopStreaming : startStreaming}
-            disabled={isConnecting}
-            variant={isStreamActive ? "destructive" : "default"}
+            onClick={isConnected ? stopStreaming : startStreaming}
+            disabled={isConnecting || !cameraRegistered}
+            variant={isConnected ? "destructive" : "default"}
           >
             {isConnecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            {isStreamActive ? "Stop Streaming" : "Start Streaming"}
+            {isConnected ? "Stop Streaming" : 
+             !cameraRegistered ? "Registering..." : "Start Streaming"}
           </Button>
         </div>
 
         {/* Error Display */}
-        {error && (
+        {roomError && (
           <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
-            Error: {error}
+            LiveKit Error: {roomError}
           </div>
         )}
 
-        {/* Stream Info */}
-        {ingestUrl && streamKey && (
+        {/* Room Info */}
+        {isConnected && (
           <div className="p-3 text-sm bg-muted rounded-md">
-            <div className="font-medium mb-1">LiveKit WHIP Endpoint:</div>
-            <div className="text-xs text-muted-foreground break-all">{ingestUrl}</div>
+            <div className="font-medium mb-1">LiveKit Room Status:</div>
+            <div className="text-xs text-muted-foreground">
+              Connected to room: {eventId} • Identity: {cameraIdentity}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {participants.length} total participants in room
+            </div>
           </div>
         )}
       </CardContent>
