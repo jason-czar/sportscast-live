@@ -147,13 +147,31 @@ export function useLiveKitRoom({
       });
 
       room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, publication, participant: RemoteParticipant) => {
-        console.log('Track subscribed:', track.kind, 'from', participant.identity);
+        console.log('Track subscribed:', {
+          kind: track.kind,
+          participant: participant.identity,
+          trackSid: track.sid,
+          isMuted: track.isMuted
+        });
         updateParticipants(room);
       });
 
       room.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack, publication, participant: RemoteParticipant) => {
         console.log('Track unsubscribed:', track.kind, 'from', participant.identity);
         updateParticipants(room);
+      });
+
+      room.on(RoomEvent.TrackPublished, (publication, participant: RemoteParticipant) => {
+        console.log('Track published:', {
+          kind: publication.kind,
+          participant: participant.identity,
+          trackName: publication.trackName,
+          source: publication.source
+        });
+      });
+
+      room.on(RoomEvent.TrackUnpublished, (publication, participant: RemoteParticipant) => {
+        console.log('Track unpublished:', publication.kind, 'from', participant.identity);
       });
 
       room.on(RoomEvent.ConnectionStateChanged, (state: ConnectionState) => {
@@ -229,14 +247,22 @@ export function useLiveKitRoom({
   const getParticipantVideoTracks = useCallback(() => {
     const videoTracks = new Map<string, RemoteVideoTrack>();
     
+    console.log('Getting video tracks for participants:', state.participants.length);
+    
     state.participants.forEach(participant => {
+      console.log(`Participant ${participant.identity} has ${participant.videoTrackPublications.size} video publications`);
+      
       participant.videoTrackPublications.forEach(publication => {
+        console.log(`  Publication: ${publication.trackSid}, subscribed: ${publication.isSubscribed}, hasTrack: ${!!publication.track}`);
+        
         if (publication.track && publication.isSubscribed) {
           videoTracks.set(participant.identity, publication.track as RemoteVideoTrack);
+          console.log(`  Added video track for ${participant.identity}`);
         }
       });
     });
 
+    console.log('Final video tracks map:', videoTracks.size);
     return videoTracks;
   }, [state.participants]);
 

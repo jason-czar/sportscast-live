@@ -102,6 +102,15 @@ const DirectorDashboard = () => {
       trackCount: tracks.size,
       participantCount: participants.length,
       cameraParticipantCount: cameraParticipants.length,
+      allParticipants: participants.map(p => ({
+        identity: p.identity,
+        videoPublications: p.videoTrackPublications.size,
+        publications: Array.from(p.videoTrackPublications.values()).map(pub => ({
+          trackSid: pub.trackSid,
+          isSubscribed: pub.isSubscribed,
+          hasTrack: !!pub.track
+        }))
+      })),
       tracks: Array.from(tracks.entries()).map(([id, track]) => ({
         participantId: id,
         hasTrack: !!track,
