@@ -85,3 +85,6 @@ verify_jwt = false
 
 [functions.livekit-egress]
 verify_jwt = false
+
+[functions.livekit-token]
+verify_jwt = false
