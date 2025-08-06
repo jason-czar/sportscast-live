@@ -13,6 +13,7 @@ import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { supabase } from "@/integrations/supabase/client";
 import ErrorMessage from "@/components/error/ErrorMessage";
+import AppHeader from "@/components/AppHeader";
 import { Camera, Video, VideoOff, Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -232,8 +233,10 @@ const JoinAsCamera = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className={`mx-auto ${isMobile ? 'max-w-md' : 'max-w-4xl'}`}>
+    <div className="min-h-screen bg-background">
+      <AppHeader />
+      <div className="p-4">
+        <div className={`mx-auto ${isMobile ? 'max-w-md' : 'max-w-4xl'}`}>
         <Card>
           <CardHeader>
             <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-xl' : ''}`}>
@@ -369,6 +372,7 @@ const JoinAsCamera = () => {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );
