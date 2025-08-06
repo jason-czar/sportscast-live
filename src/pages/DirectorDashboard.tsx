@@ -113,18 +113,21 @@ const DirectorDashboard = () => {
   const startStream = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('Starting stream for event:', eventId);
+      console.log('Starting LiveKit egress for event:', eventId);
       
-      const { data, error } = await supabase.functions.invoke('start-stream', {
-        body: { eventId }
+      const { data, error } = await supabase.functions.invoke('livekit-egress', {
+        body: { 
+          eventId,
+          action: 'start'
+        }
       });
 
       if (error) {
-        console.error('Start stream function error:', error);
+        console.error('LiveKit egress start error:', error);
         throw error;
       }
 
-      console.log('Start stream response:', data);
+      console.log('LiveKit egress start response:', data);
 
       await supabase
         .from('events')
@@ -146,8 +149,11 @@ const DirectorDashboard = () => {
   const endStream = useCallback(async () => {
     try {
       setLoading(true);
-      const { error } = await supabase.functions.invoke('end-stream', {
-        body: { eventId }
+      const { error } = await supabase.functions.invoke('livekit-egress', {
+        body: { 
+          eventId,
+          action: 'stop'
+        }
       });
 
       if (error) throw error;

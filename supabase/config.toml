@@ -79,3 +79,9 @@ verify_jwt = false
 
 [functions.mux-webhook]
 verify_jwt = false
+
+[functions.livekit-ingress]
+verify_jwt = false
+
+[functions.livekit-egress]
+verify_jwt = false

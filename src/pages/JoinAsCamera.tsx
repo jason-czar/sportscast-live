@@ -193,10 +193,10 @@ const JoinAsCamera = () => {
         return;
       }
       
-      // For mobile/RTMP events, use the existing flow
-      console.log('Connecting to RTMP event');
+      // For LiveKit streaming, register camera
+      console.log('Connecting to LiveKit event');
       
-      // Register camera with backend for RTMP streaming
+      // Register camera with backend for LiveKit streaming
       const { data, error } = await supabase.functions.invoke('register-camera', {
         headers: {
           Authorization: `Bearer ${session.access_token}`
@@ -212,12 +212,12 @@ const JoinAsCamera = () => {
 
       toastService.event.cameraConnected(deviceLabel.trim());
 
-      // Navigate to RTMP camera streaming page
-      navigate(`/camera/${data.cameraId}`, {
+      // Navigate to LiveKit camera streaming page
+      navigate(`/livekit-camera/${eventData.id}`, {
         state: { 
-          streamKey: data.streamKey,
-          ingestUrl: data.ingestUrl,
-          eventData 
+          eventName: eventData.name,
+          deviceLabel: deviceLabel.trim(),
+          eventId: eventData.id
         } 
       });
     } catch (error) {

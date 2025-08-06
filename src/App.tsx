@@ -15,6 +15,7 @@ import CreateEvent from "./pages/CreateEvent";
 import JoinAsCamera from "./pages/JoinAsCamera";
 import CameraStream from "./pages/CameraStream";
 import TelegramCameraStream from "./pages/TelegramCameraStream";
+import { LiveKitCameraPage } from "./pages/LiveKitCameraPage";
 import DirectorDashboard from "./pages/DirectorDashboard";
 import ViewerPage from "./pages/ViewerPage";
 import UserProfile from "./pages/UserProfile";
@@ -91,6 +92,16 @@ const App = () => {
                   <ErrorBoundary>
                     <ProtectedRoute>
                       <TelegramCameraStream />
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                } 
+              />
+              <Route 
+                path="/livekit-camera/:eventId" 
+                element={
+                  <ErrorBoundary>
+                    <ProtectedRoute>
+                      <LiveKitCameraPage />
                     </ProtectedRoute>
                   </ErrorBoundary>
                 } 
