@@ -2,14 +2,16 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Play, Users, Wifi, Eye } from "lucide-react";
+import { Play, Users, Wifi, Eye, Youtube, Twitch, ExternalLink, MessageCircle } from "lucide-react";
 import Hls from "hls.js";
 import LoadingSkeleton from "@/components/ui/LoadingSkeleton";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useRealtimePresence } from "@/hooks/useRealtimePresence";
 import { useRealtimeEventUpdates } from "@/hooks/useRealtimeEventUpdates";
 import TelegramStreaming from "@/components/TelegramStreaming";
+import AppHeader from "@/components/AppHeader";
 
 interface EventData {
   id: string;
@@ -20,6 +22,8 @@ interface EventData {
   streaming_type?: string;
   telegram_channel_id?: string;
   telegram_invite_link?: string;
+  youtube_key?: string;
+  twitch_key?: string;
 }
 
 const ViewerPage = () => {
@@ -161,8 +165,37 @@ const ViewerPage = () => {
     );
   }
 
+  // Determine the best streaming source
+  const getStreamingSource = () => {
+    if (event?.youtube_key) {
+      return {
+        type: 'youtube',
+        url: `https://www.youtube.com/embed/live_stream?channel=${event.youtube_key}&autoplay=1&controls=1`,
+        chatUrl: `https://www.youtube.com/live_chat?v=${event.youtube_key}&embed_domain=${window.location.hostname}`
+      };
+    }
+    if (event?.twitch_key) {
+      return {
+        type: 'twitch',
+        url: `https://player.twitch.tv/?channel=${event.twitch_key}&parent=${window.location.hostname}&autoplay=true`,
+        chatUrl: `https://www.twitch.tv/embed/${event.twitch_key}/chat?parent=${window.location.hostname}`
+      };
+    }
+    if (event?.program_url) {
+      return {
+        type: 'hls',
+        url: event.program_url,
+        chatUrl: null
+      };
+    }
+    return null;
+  };
+
+  const streamingSource = getStreamingSource();
+
   return (
     <div className="min-h-screen bg-background">
+      <AppHeader />
       {/* Check if this is a Telegram streaming event */}
       {event.streaming_type === 'telegram' ? (
         <div className="container mx-auto px-4 py-6">
@@ -177,30 +210,65 @@ const ViewerPage = () => {
         </div>
       ) : (
         <>
-          {/* Main Video Player for Mobile/RTMP streaming */}
+          {/* Main Video Player */}
           <div className="relative">
             <div className="aspect-video bg-black">
-              {event.program_url && event.status === 'live' ? (
-                <video
-                  ref={videoRef}
-                  className="w-full h-full"
-                  controls
-                  muted
-                  autoPlay
-                  playsInline
-                />
+              {streamingSource && event.status === 'live' ? (
+                streamingSource.type === 'hls' ? (
+                  <video
+                    ref={videoRef}
+                    className="w-full h-full"
+                    controls
+                    muted
+                    autoPlay
+                    playsInline
+                  />
+                ) : (
+                  <iframe
+                    src={streamingSource.url}
+                    className="w-full h-full"
+                    allowFullScreen
+                    allow="autoplay; encrypted-media"
+                    frameBorder="0"
+                  />
+                )
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <div className="text-center text-white">
                     <Play className="h-16 w-16 mx-auto mb-4 opacity-50" />
                     <h3 className="text-xl font-semibold mb-2">
-                      {event.status === 'created' ? 'Stream Starting Soon' : 'Stream Offline'}
+                      {event.status === 'scheduled' ? 'Stream Starting Soon' : 'Stream Offline'}
                     </h3>
-                    <p className="opacity-75">
-                      {event.status === 'created' 
+                    <p className="opacity-75 mb-4">
+                      {event.status === 'scheduled' 
                         ? 'The event will begin shortly. Stay tuned!' 
                         : 'This stream has ended.'}
                     </p>
+                    {/* Platform Links */}
+                    <div className="flex gap-2 justify-center">
+                      {event.youtube_key && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(`https://youtube.com/channel/${event.youtube_key}`, '_blank')}
+                          className="bg-red-600 hover:bg-red-700 text-white border-red-600"
+                        >
+                          <Youtube className="h-4 w-4 mr-2" />
+                          YouTube
+                        </Button>
+                      )}
+                      {event.twitch_key && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(`https://twitch.tv/${event.twitch_key}`, '_blank')}
+                          className="bg-purple-600 hover:bg-purple-700 text-white border-purple-600"
+                        >
+                          <Twitch className="h-4 w-4 mr-2" />
+                          Twitch
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -208,11 +276,23 @@ const ViewerPage = () => {
 
             {/* Live Indicator */}
             {event.status === 'live' && (
-              <div className="absolute top-4 left-4">
+              <div className="absolute top-4 left-4 flex gap-2">
                 <Badge variant="destructive" className="bg-red-600 animate-pulse">
                   <Wifi className="h-3 w-3 mr-1" />
                   LIVE
                 </Badge>
+                {streamingSource?.type === 'youtube' && (
+                  <Badge className="bg-red-600">
+                    <Youtube className="h-3 w-3 mr-1" />
+                    YouTube
+                  </Badge>
+                )}
+                {streamingSource?.type === 'twitch' && (
+                  <Badge className="bg-purple-600">
+                    <Twitch className="h-3 w-3 mr-1" />
+                    Twitch
+                  </Badge>
+                )}
               </div>
             )}
 
@@ -233,14 +313,40 @@ const ViewerPage = () => {
         </>
       )}
 
-      {/* Event Info - Only show for non-Telegram events */}
+      {/* Event Info and Chat */}
       {event.streaming_type !== 'telegram' && (
         <div className="container mx-auto px-4 py-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <Card>
                 <CardHeader>
-                  <CardTitle>{event.name}</CardTitle>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>{event.name}</span>
+                    <div className="flex gap-2">
+                      {event.youtube_key && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(`https://youtube.com/channel/${event.youtube_key}`, '_blank')}
+                        >
+                          <Youtube className="h-4 w-4 mr-2" />
+                          YouTube
+                          <ExternalLink className="h-3 w-3 ml-1" />
+                        </Button>
+                      )}
+                      {event.twitch_key && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(`https://twitch.tv/${event.twitch_key}`, '_blank')}
+                        >
+                          <Twitch className="h-4 w-4 mr-2" />
+                          Twitch
+                          <ExternalLink className="h-3 w-3 ml-1" />
+                        </Button>
+                      )}
+                    </div>
+                  </CardTitle>
                   <CardDescription className="flex items-center gap-4">
                     <span>Sport: {event.sport}</span>
                     <Badge variant={event.status === 'live' ? 'default' : 'secondary'}>
@@ -257,22 +363,35 @@ const ViewerPage = () => {
               </Card>
             </div>
 
-            {/* Chat/Social Section */}
+            {/* Chat Section */}
             <div className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Live Chat</CardTitle>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <MessageCircle className="h-5 w-5" />
+                    Live Chat
+                  </CardTitle>
                   <CardDescription>
                     Connect with other viewers
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-64 bg-muted rounded-md flex items-center justify-center">
-                    <p className="text-sm text-muted-foreground text-center">
-                      Live chat integration would appear here
-                      <br />
-                      (YouTube/Twitch chat embeds)
-                    </p>
+                  <div className="h-96 bg-muted rounded-md overflow-hidden">
+                    {streamingSource?.chatUrl ? (
+                      <iframe
+                        src={streamingSource.chatUrl}
+                        className="w-full h-full"
+                        frameBorder="0"
+                      />
+                    ) : (
+                      <div className="h-full flex items-center justify-center">
+                        <p className="text-sm text-muted-foreground text-center">
+                          Live chat will appear here when streaming
+                          <br />
+                          to YouTube or Twitch
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -287,12 +406,20 @@ const ViewerPage = () => {
                     <span className="text-sm font-medium">{viewerCount.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Stream Source</span>
+                    <span className="text-sm font-medium capitalize">
+                      {streamingSource?.type || 'HLS'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Stream Quality</span>
                     <span className="text-sm font-medium">1080p</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Latency</span>
-                    <span className="text-sm font-medium">~3-5s</span>
+                    <span className="text-sm font-medium">
+                      {streamingSource?.type === 'hls' ? '~3-5s' : '~10-15s'}
+                    </span>
                   </div>
                 </CardContent>
               </Card>
