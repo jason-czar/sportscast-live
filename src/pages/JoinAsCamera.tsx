@@ -14,6 +14,7 @@ import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { supabase } from "@/integrations/supabase/client";
 import ErrorMessage from "@/components/error/ErrorMessage";
 import { Camera, Video, VideoOff, Loader2 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const JoinAsCamera = () => {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ const JoinAsCamera = () => {
   const { session } = useAuth();
   const { handleAsyncError } = useErrorHandler();
   const { isOnline } = useOnlineStatus();
+  const isMobile = useIsMobile();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [eventCode, setEventCode] = useState("");
   const [deviceLabel, setDeviceLabel] = useState("");
@@ -231,11 +233,11 @@ const JoinAsCamera = () => {
 
   return (
     <div className="min-h-screen bg-background p-4">
-      <div className="max-w-4xl mx-auto">
+      <div className={`mx-auto ${isMobile ? 'max-w-md' : 'max-w-4xl'}`}>
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Camera className="h-6 w-6" />
+            <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-xl' : ''}`}>
+              <Camera className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'}`} />
               Join as Camera Operator
             </CardTitle>
             <CardDescription>
@@ -243,7 +245,7 @@ const JoinAsCamera = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
               {/* Camera Preview */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Camera Preview</h3>
@@ -293,23 +295,24 @@ const JoinAsCamera = () => {
                   <TabsContent value="manual" className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="eventCode">Event Code</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="eventCode"
-                          value={eventCode}
-                          onChange={(e) => setEventCode(e.target.value.toUpperCase())}
-                          placeholder="Enter 6-digit code"
-                          maxLength={6}
-                          className="uppercase"
-                        />
-                        <LoadingButton 
-                          onClick={validateEventCode}
-                          loading={loading && !eventData}
-                          disabled={!eventCode.trim() || !isOnline}
-                        >
-                          {!isOnline ? 'Offline' : 'Validate'}
-                        </LoadingButton>
-                      </div>
+                        <div className={`flex gap-2 ${isMobile ? 'flex-col' : ''}`}>
+                          <Input
+                            id="eventCode"
+                            value={eventCode}
+                            onChange={(e) => setEventCode(e.target.value.toUpperCase())}
+                            placeholder="Enter 6-digit code"
+                            maxLength={6}
+                            className="uppercase"
+                          />
+                          <LoadingButton 
+                            onClick={validateEventCode}
+                            loading={loading && !eventData}
+                            disabled={!eventCode.trim() || !isOnline}
+                            className={isMobile ? 'w-full' : ''}
+                          >
+                            {!isOnline ? 'Offline' : 'Validate'}
+                          </LoadingButton>
+                        </div>
                     </div>
                   </TabsContent>
                   

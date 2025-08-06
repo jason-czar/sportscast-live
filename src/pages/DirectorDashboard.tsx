@@ -21,6 +21,7 @@ import { LiveCameraCard } from "@/components/LiveCameraCard";
 import EventHeader from "@/components/EventHeader";
 import EventQRCode from "@/components/EventQRCode";
 import AppHeader from "@/components/AppHeader";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Camera {
   id: string;
@@ -50,6 +51,7 @@ const DirectorDashboard = () => {
   const [currentUserId] = useState(`director_${Math.random().toString(36).substr(2, 9)}`);
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const [activeCameraIdentity, setActiveCameraIdentity] = useState<string | null>(null);
+  const isMobile = useIsMobile();
   
   // Use real-time hooks for database updates
   const { viewerCount } = useRealtimePresence({ 
@@ -334,10 +336,10 @@ const DirectorDashboard = () => {
         )}
 
         {/* QR Code and Camera Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-4'}`}>
           {/* QR Code Section */}
           {event && (
-            <div className="lg:col-span-1">
+            <div className={isMobile ? 'order-2' : 'lg:col-span-1'}>
               <EventQRCode 
                 eventCode={event.event_code} 
                 eventName={event.name} 
@@ -346,7 +348,7 @@ const DirectorDashboard = () => {
           )}
           
           {/* Live Camera Grid */}
-          <div className="lg:col-span-3 space-y-4">
+          <div className={`space-y-4 ${isMobile ? 'order-1' : 'lg:col-span-3'}`}>
             {/* Main Program Feed Display */}
             {selectedCameraId && (
               <Card>
@@ -418,7 +420,7 @@ const DirectorDashboard = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
                 {cameraParticipants.map((participant) => (
                   <LiveCameraCard
                     key={participant.identity}

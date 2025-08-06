@@ -15,12 +15,14 @@ import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppHeader from "@/components/AppHeader";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const CreateEvent = () => {
   const navigate = useNavigate();
   const { session } = useAuth();
   const { handleAsyncError } = useErrorHandler();
   const { isOnline } = useOnlineStatus();
+  const isMobile = useIsMobile();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     eventName: "",
@@ -153,10 +155,10 @@ const CreateEvent = () => {
                 </Select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
                 <div className="space-y-2">
                   <Label htmlFor="dateTime">Start Date & Time</Label>
-                  <div className="flex gap-2">
+                  <div className={`flex gap-2 ${isMobile ? 'flex-col' : ''}`}>
                     <Input
                       id="dateTime"
                       type="datetime-local"
@@ -179,8 +181,9 @@ const CreateEvent = () => {
                         const localDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
                         setFormData({...formData, dateTime: localDateTime});
                       }}
+                      className={isMobile ? 'w-full' : ''}
                     >
-                      Now
+                      Set to Now
                     </Button>
                   </div>
                 </div>
@@ -235,7 +238,7 @@ const CreateEvent = () => {
                 </div>
               </div>
 
-              <div className="flex gap-4">
+              <div className={`flex gap-4 ${isMobile ? 'flex-col' : ''}`}>
                 <Button asChild variant="outline" className="flex-1">
                   <Link to="/">
                     <ArrowLeft className="h-4 w-4 mr-2" />

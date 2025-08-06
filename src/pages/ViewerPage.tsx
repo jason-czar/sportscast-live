@@ -12,6 +12,7 @@ import { useRealtimePresence } from "@/hooks/useRealtimePresence";
 import { useRealtimeEventUpdates } from "@/hooks/useRealtimeEventUpdates";
 import TelegramStreaming from "@/components/TelegramStreaming";
 import AppHeader from "@/components/AppHeader";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface EventData {
   id: string;
@@ -31,6 +32,7 @@ const ViewerPage = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [currentUserId] = useState(`viewer_${Math.random().toString(36).substr(2, 9)}`);
+  const isMobile = useIsMobile();
   
   // Use real-time hooks
   const { viewerCount, onlineUsers } = useRealtimePresence({ 
@@ -316,18 +318,19 @@ const ViewerPage = () => {
       {/* Event Info and Chat */}
       {event.streaming_type !== 'telegram' && (
         <div className="container mx-auto px-4 py-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
+          <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'}`}>
+            <div className={isMobile ? '' : 'lg:col-span-2'}>
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
+                  <CardTitle className={`flex items-center justify-between ${isMobile ? 'flex-col gap-3 items-start' : ''}`}>
                     <span>{event.name}</span>
-                    <div className="flex gap-2">
+                    <div className={`flex gap-2 ${isMobile ? 'flex-col w-full' : ''}`}>
                       {event.youtube_key && (
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => window.open(`https://youtube.com/channel/${event.youtube_key}`, '_blank')}
+                          className={isMobile ? 'w-full justify-start' : ''}
                         >
                           <Youtube className="h-4 w-4 mr-2" />
                           YouTube
@@ -339,6 +342,7 @@ const ViewerPage = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => window.open(`https://twitch.tv/${event.twitch_key}`, '_blank')}
+                          className={isMobile ? 'w-full justify-start' : ''}
                         >
                           <Twitch className="h-4 w-4 mr-2" />
                           Twitch
@@ -376,7 +380,7 @@ const ViewerPage = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-96 bg-muted rounded-md overflow-hidden">
+                  <div className={`bg-muted rounded-md overflow-hidden ${isMobile ? 'h-64' : 'h-96'}`}>
                     {streamingSource?.chatUrl ? (
                       <iframe
                         src={streamingSource.chatUrl}
