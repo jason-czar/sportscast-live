@@ -35,7 +35,8 @@ export function LiveCameraCard({
   }, [videoTrack]);
 
   const cameraLabel = participant.metadata || participant.identity || 'Unknown Camera';
-  const isLive = videoTrack && !videoTrack.isMuted;
+  // Check if camera is live based on video track existence and participant connection
+  const isLive = videoTrack && participant.connectionQuality !== 'lost';
 
   return (
     <Card className={`cursor-pointer transition-all duration-200 ${
