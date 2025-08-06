@@ -32,11 +32,17 @@ const CreateEvent = () => {
     streamingType: ""
   });
 
-  // Set default datetime to current time
+  // Set default datetime to current local time
   useEffect(() => {
     const now = new Date();
-    const defaultDateTime = now.toISOString().slice(0, 16);
-    setFormData(prev => ({ ...prev, dateTime: defaultDateTime }));
+    // Create datetime-local string in user's local timezone
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const localDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+    setFormData(prev => ({ ...prev, dateTime: localDateTime }));
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -158,14 +164,14 @@ const CreateEvent = () => {
               <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
                 <div className="space-y-2">
                   <Label htmlFor="dateTime">Start Date & Time</Label>
-                  <div className={`flex gap-2 ${isMobile ? 'flex-col' : ''}`}>
+                  <div className="flex gap-2">
                     <Input
                       id="dateTime"
                       type="datetime-local"
                       value={formData.dateTime}
                       onChange={(e) => setFormData({...formData, dateTime: e.target.value})}
                       required
-                      className="flex-1"
+                      className="flex-1 min-w-0"
                     />
                     <Button
                       type="button"
@@ -181,7 +187,7 @@ const CreateEvent = () => {
                         const localDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
                         setFormData({...formData, dateTime: localDateTime});
                       }}
-                      className={isMobile ? 'w-full' : ''}
+                      className="whitespace-nowrap"
                     >
                       Set to Now
                     </Button>
