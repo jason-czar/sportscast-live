@@ -121,6 +121,9 @@ const DirectorDashboard = () => {
   }, [getParticipantVideoTracks, participants.length, cameraParticipants.length]);
   
   
+  // Calculate streaming status
+  const streaming = useMemo(() => event?.status === 'live', [event?.status]);
+
   // Auto-connect to LiveKit room when event is loaded
   useEffect(() => {
     if (event && !roomConnected && !roomConnecting) {
@@ -199,7 +202,7 @@ const DirectorDashboard = () => {
         description: "Failed to switch camera. Please try again.",
       });
     }
-  }, [eventId, cameras, participants, sendDataMessage]);
+  }, [eventId, cameras, participants, sendDataMessage, streaming]);
 
   const startStream = useCallback(async () => {
     try {
@@ -292,7 +295,6 @@ const DirectorDashboard = () => {
     }
   }, [eventId]);
 
-  const streaming = useMemo(() => event?.status === 'live', [event?.status]);
 
   if (dataLoading && !event) {
     return <LoadingSpinner fullScreen text="Loading director dashboard..." />;
