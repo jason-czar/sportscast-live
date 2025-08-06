@@ -76,6 +76,14 @@ const App = () => {
                   </ErrorBoundary>
                 } 
               />
+              <Route 
+                path="/view/:eventId" 
+                element={
+                  <ErrorBoundary>
+                    <ViewerPage />
+                  </ErrorBoundary>
+                } 
+              />
               {/* Legacy RTMP route removed - all cameras now use LiveKit */}
               <Route 
                 path="/camera/telegram/:eventId" 

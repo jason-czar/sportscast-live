@@ -11,6 +11,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useRealtimePresence } from "@/hooks/useRealtimePresence";
 import { useRealtimeEventUpdates } from "@/hooks/useRealtimeEventUpdates";
 import TelegramStreaming from "@/components/TelegramStreaming";
+import LiveKitViewer from "@/components/LiveKitViewer";
 import AppHeader from "@/components/AppHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -77,7 +78,7 @@ const ViewerPage = () => {
     }
   }, []);
   
-  const { event, loading } = useRealtimeEventUpdates({
+  const { event, cameras, loading } = useRealtimeEventUpdates({
     eventId: eventId || '',
     onEventUpdate: useCallback((updatedEvent) => {
       // Re-initialize player if program URL changes
@@ -183,12 +184,27 @@ const ViewerPage = () => {
         chatUrl: `https://www.twitch.tv/embed/${event.twitch_key}/chat?parent=${window.location.hostname}`
       };
     }
+    // Check if we have a program_url from the database
     if (event?.program_url) {
       return {
         type: 'hls',
         url: event.program_url,
         chatUrl: null
       };
+    }
+    // For LiveKit events, construct the Mux stream URL if no program_url is set
+    if (event?.streaming_type === 'livekit') {
+      // Try to get an active camera's stream to build the viewer URL
+      const activeCameras = cameras.filter(cam => cam.is_live);
+      if (activeCameras.length > 0) {
+        // Use the LiveKit room viewer URL
+        const viewerUrl = `${window.location.origin}/view/${event.id}`;
+        return {
+          type: 'livekit',
+          url: viewerUrl,
+          chatUrl: null
+        };
+      }
     }
     return null;
   };
@@ -198,7 +214,7 @@ const ViewerPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      {/* Check if this is a Telegram streaming event */}
+      {/* Check streaming type and render appropriate component */}
       {event.streaming_type === 'telegram' ? (
         <div className="container mx-auto px-4 py-6">
           <TelegramStreaming
@@ -210,6 +226,61 @@ const ViewerPage = () => {
             isDirector={false}
           />
         </div>
+      ) : event.streaming_type === 'livekit' ? (
+        <>
+          <div className="aspect-video">
+            <LiveKitViewer />
+          </div>
+          {/* Event Info for LiveKit streams */}
+          <div className="container mx-auto px-4 py-6">
+            <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'}`}>
+              <div className={isMobile ? '' : 'lg:col-span-2'}>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{event.name}</CardTitle>
+                    <CardDescription className="flex items-center gap-4">
+                      <span>Sport: {event.sport}</span>
+                      <Badge variant={event.status === 'live' ? 'default' : 'secondary'}>
+                        {event.status}
+                      </Badge>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">
+                      Experience the action from multiple camera angles with our live multi-camera sports streaming.
+                      Professional-grade coverage with real-time camera switching for the best viewing experience.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Event Stats</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Current Viewers</span>
+                      <span className="text-sm font-medium">{viewerCount.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Stream Source</span>
+                      <span className="text-sm font-medium">LiveKit</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Stream Quality</span>
+                      <span className="text-sm font-medium">1080p</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Latency</span>
+                      <span className="text-sm font-medium">~1-2s</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        </>
       ) : (
         <>
           {/* Main Video Player */}
@@ -224,6 +295,14 @@ const ViewerPage = () => {
                     muted
                     autoPlay
                     playsInline
+                  />
+                ) : streamingSource.type === 'livekit' ? (
+                  <iframe
+                    src={streamingSource.url}
+                    className="w-full h-full"
+                    allowFullScreen
+                    allow="camera; microphone; autoplay"
+                    frameBorder="0"
                   />
                 ) : (
                   <iframe
@@ -316,7 +395,7 @@ const ViewerPage = () => {
       )}
 
       {/* Event Info and Chat */}
-      {event.streaming_type !== 'telegram' && (
+      {event.streaming_type !== 'telegram' && event.streaming_type !== 'livekit' && (
         <div className="container mx-auto px-4 py-6">
           <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'}`}>
             <div className={isMobile ? '' : 'lg:col-span-2'}>

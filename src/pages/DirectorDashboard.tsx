@@ -491,37 +491,47 @@ const DirectorDashboard = () => {
             <CardContent className="space-y-4">
               {/* Live Stream Player */}
               <div className="aspect-video bg-black rounded-lg overflow-hidden mb-4">
-                {cameras.some(cam => cam.is_live) ? (
+                {event?.program_url ? (
                   <iframe
-                    src={`https://www.youtube.com/embed/live_stream?channel=${cameras.find(cam => cam.is_live)?.stream_url?.split('?v=')[1] || ''}&autoplay=1`}
+                    src={event.program_url}
                     className="w-full h-full"
                     allowFullScreen
                     allow="autoplay; encrypted-media"
+                    frameBorder="0"
+                  />
+                ) : cameras.some(cam => cam.is_live) ? (
+                  <iframe
+                    src={`${window.location.origin}/watch/${eventId}`}
+                    className="w-full h-full"
+                    allowFullScreen
+                    allow="autoplay; encrypted-media"
+                    frameBorder="0"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <div className="text-center text-muted-foreground">
                       <Play className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p>No live streams active</p>
+                      <p>This video is unavailable</p>
+                      <p className="text-xs mt-1">Stream will appear here when cameras connect</p>
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Stream Links */}
-              {cameras.some(cam => cam.is_live && cam.stream_url) && (
+              {cameras.some(cam => cam.is_live) && (
                 <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
                   <div className="flex items-center gap-3">
-                    <Youtube className="h-5 w-5 text-red-600" />
+                    <Wifi className="h-5 w-5 text-green-600" />
                     <div>
-                      <p className="font-medium">Live Stream</p>
-                      <p className="text-sm text-muted-foreground">Professional streaming active</p>
+                      <p className="font-medium">Live Stream Active</p>
+                      <p className="text-sm text-muted-foreground">Camera feed streaming via LiveKit</p>
                     </div>
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(cameras.find(cam => cam.is_live)?.stream_url, '_blank')}
+                    onClick={() => window.open(`${window.location.origin}/watch/${eventId}`, '_blank')}
                     className="flex items-center gap-2"
                   >
                     <ExternalLink className="h-4 w-4" />
