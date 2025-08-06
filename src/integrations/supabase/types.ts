@@ -247,6 +247,33 @@ export type Database = {
         }
         Relationships: []
       }
+      youtube_stream_keys: {
+        Row: {
+          assigned_event_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          stream_key: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_event_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          stream_key: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_event_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          stream_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
