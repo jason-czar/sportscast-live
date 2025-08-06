@@ -24,12 +24,16 @@ serve(async (req) => {
       throw new Error('Missing LiveKit configuration')
     }
 
-    // Generate JWT for LiveKit room access
-    const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
+    // Generate JWT for LiveKit room access with base64url encoding
+    const headerBase64 = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '')
+    
     const now = Math.floor(Date.now() / 1000)
     const exp = now + 3600 // 1 hour expiry
     
-    const payload = btoa(JSON.stringify({
+    const payloadBase64 = btoa(JSON.stringify({
       iss: livekitApiKey,
       sub: participantIdentity,
       iat: now,
@@ -44,10 +48,12 @@ serve(async (req) => {
         roomRecord: false,
         roomAdmin: participantIdentity.includes('director')
       }
-    }))
+    })).replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '')
 
-    // Create signature
-    const signature = await crypto.subtle.importKey(
+    // Create signature using proper base64url encoding
+    const signatureKey = await crypto.subtle.importKey(
       'raw',
       new TextEncoder().encode(livekitApiSecret),
       { name: 'HMAC', hash: 'SHA-256' },
@@ -57,11 +63,17 @@ serve(async (req) => {
 
     const signatureBytes = await crypto.subtle.sign(
       'HMAC',
-      signature,
-      new TextEncoder().encode(`${header}.${payload}`)
+      signatureKey,
+      new TextEncoder().encode(`${headerBase64}.${payloadBase64}`)
     )
 
-    const token = `${header}.${payload}.${btoa(String.fromCharCode(...new Uint8Array(signatureBytes)))}`
+    // Convert to base64url format (replace +/= with -/_ and remove padding)
+    const signatureBase64 = btoa(String.fromCharCode(...new Uint8Array(signatureBytes)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '')
+
+    const token = `${headerBase64}.${payloadBase64}.${signatureBase64}`
 
     const livekitUrl = Deno.env.get('LIVEKIT_WS_URL')
     if (!livekitUrl) {
