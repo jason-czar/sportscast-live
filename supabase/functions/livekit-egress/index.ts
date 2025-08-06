@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { eventId, action } = await req.json()
+    const { eventId, action, activeCamera } = await req.json()
     
     if (!eventId) {
       throw new Error('Missing eventId')
@@ -88,8 +88,12 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           room_name: eventId,
-          layout: 'grid',
-          stream_outputs: streamOutputs
+          layout: 'single-speaker',
+          stream_outputs: streamOutputs,
+          layout_options: {
+            logo_text: '',
+            background_color: '#000000'
+          }
         })
       })
 
@@ -112,6 +116,7 @@ serve(async (req) => {
         .from('events')
         .update({ 
           status: 'live',
+          mux_stream_id: egressData.egress_id,
           updated_at: new Date().toISOString()
         })
         .eq('id', eventId)
@@ -126,6 +131,78 @@ serve(async (req) => {
           success: true,
           egressId: egressData.egress_id,
           status: 'started'
+        }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      )
+
+    } else if (action === 'update_layout') {
+      // Update egress layout in real-time
+      if (!activeCamera) {
+        throw new Error('Missing activeCamera for layout update')
+      }
+
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      )
+
+      // Get current event to find egress ID
+      const { data: event, error: eventError } = await supabase
+        .from('events')
+        .select('mux_stream_id')
+        .eq('id', eventId)
+        .single()
+
+      if (eventError || !event?.mux_stream_id) {
+        console.log('No active egress found for layout update')
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: 'No active egress to update'
+          }),
+          { 
+            headers: { 
+              ...corsHeaders, 
+              'Content-Type': 'application/json' 
+            } 
+          }
+        )
+      }
+
+      // Update layout via LiveKit API
+      const layoutResponse = await fetch(`${livekitUrl.replace('wss://', 'https://')}/egress/layout`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          egress_id: event.mux_stream_id,
+          layout: 'single-speaker',
+          layout_options: {
+            active_speaker_identity: activeCamera
+          }
+        })
+      })
+
+      if (!layoutResponse.ok) {
+        const errorText = await layoutResponse.text()
+        console.error('LiveKit layout update failed:', errorText)
+        // Don't throw - layout updates can be best effort
+      }
+
+      console.log('Layout updated for camera:', activeCamera)
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          activeCamera,
+          status: 'layout_updated'
         }),
         { 
           headers: { 
@@ -170,7 +247,7 @@ serve(async (req) => {
       )
     }
 
-    throw new Error('Invalid action. Use "start" or "stop"')
+    throw new Error('Invalid action. Use "start", "stop", or "update_layout"')
 
   } catch (error) {
     console.error('LiveKit egress error:', error)

@@ -125,6 +125,22 @@ const DirectorDashboard = () => {
         timestamp: Date.now()
       });
 
+      // Update LiveKit egress layout in real-time
+      if (streaming) {
+        try {
+          await supabase.functions.invoke('livekit-egress', {
+            body: { 
+              eventId,
+              action: 'update_layout',
+              activeCamera: participantIdentity
+            }
+          });
+        } catch (layoutError) {
+          console.warn('Layout update failed:', layoutError);
+          // Don't block the UI for layout update failures
+        }
+      }
+
       // Also update database for persistence
       const cameraRecord = cameras.find(cam => 
         cam.device_label.toLowerCase().replace(/\s+/g, '_') === participantIdentity.replace('camera_', '')
