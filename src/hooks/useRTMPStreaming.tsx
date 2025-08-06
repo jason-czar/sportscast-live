@@ -131,7 +131,8 @@ export const useRTMPStreaming = () => {
           video: { 
             width: { ideal: 1280 },
             height: { ideal: 720 },
-            frameRate: { ideal: 30 }
+            frameRate: { ideal: 30 },
+            facingMode: "environment" // Use back camera by default
           },
           audio: true
         });
