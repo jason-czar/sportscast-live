@@ -91,6 +91,46 @@ export function LiveKitCameraStream({
     };
   }, [eventId, deviceLabel]);
 
+  // Publish tracks when room is connected
+  useEffect(() => {
+    const publishTracks = async () => {
+      if (isConnected && localParticipant && streamRef.current) {
+        try {
+          console.log('Publishing camera tracks to LiveKit room');
+          
+          const videoTrack = streamRef.current.getVideoTracks()[0];
+          const audioTrack = streamRef.current.getAudioTracks()[0];
+          
+          if (videoTrack) {
+            await localParticipant.publishTrack(videoTrack, {
+              name: 'camera',
+              source: Track.Source.Camera
+            });
+            console.log('Video track published successfully');
+          }
+          
+          if (audioTrack) {
+            await localParticipant.publishTrack(audioTrack, {
+              name: 'microphone',
+              source: Track.Source.Microphone
+            });
+            console.log('Audio track published successfully');
+          }
+          
+        } catch (error) {
+          console.error('Failed to publish tracks:', error);
+          toast({
+            title: "Track Publishing Failed",
+            description: "Failed to publish camera tracks",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+
+    publishTracks();
+  }, [isConnected, localParticipant, toast]);
+
   const registerCameraInDatabase = async () => {
     try {
       // First get the event to retrieve the event code
@@ -140,28 +180,8 @@ export function LiveKitCameraStream({
         throw new Error('Camera not registered. Please wait for registration to complete.');
       }
 
-      // Connect to LiveKit room
+      // Connect to LiveKit room and wait for connection
       await connectToRoom();
-
-      // Publish video and audio tracks
-      if (room && localParticipant) {
-        const videoTrack = streamRef.current.getVideoTracks()[0];
-        const audioTrack = streamRef.current.getAudioTracks()[0];
-        
-        if (videoTrack) {
-          await localParticipant.publishTrack(videoTrack, {
-            name: 'camera',
-            source: Track.Source.Camera
-          });
-        }
-        
-        if (audioTrack) {
-          await localParticipant.publishTrack(audioTrack, {
-            name: 'microphone',
-            source: Track.Source.Microphone
-          });
-        }
-      }
 
       onStreamStart?.();
       
