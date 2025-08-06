@@ -30,12 +30,11 @@ serve(async (req) => {
     
     const { data: eventData } = await supabase
       .from('events')
-      .select('youtube_stream_key, twitch_stream_key')
+      .select('youtube_stream_key')
       .eq('id', eventId)
       .single()
     
     const youtubeKey = eventData?.youtube_stream_key || Deno.env.get('YOUTUBE_STREAM_KEY')
-    const twitchKey = eventData?.twitch_stream_key || Deno.env.get('TWITCH_STREAM_KEY')
 
     if (!livekitApiKey || !livekitApiSecret || !livekitUrl) {
       throw new Error('Missing LiveKit configuration')
@@ -74,25 +73,16 @@ serve(async (req) => {
     const token = `${header}.${payload}.${btoa(String.fromCharCode(...new Uint8Array(signatureBytes)))}`
 
     if (action === 'start') {
-      // Start egress stream
-      const streamOutputs = []
-      
-      if (youtubeKey) {
-        streamOutputs.push({
-          urls: [`rtmp://a.rtmp.youtube.com/live2/${youtubeKey}`]
-        })
-        console.log('YouTube streaming configured with key:', youtubeKey.substring(0, 8) + '...')
-      }
-      
-      if (twitchKey) {
-        streamOutputs.push({
-          urls: [`rtmp://live.twitch.tv/app/${twitchKey}`]
-        })
+      // Start egress stream to YouTube only
+      if (!youtubeKey) {
+        throw new Error('No YouTube stream key available for this event')
       }
 
-      if (streamOutputs.length === 0) {
-        throw new Error('No stream keys configured for YouTube or Twitch')
-      }
+      const streamOutputs = [{
+        urls: [`rtmp://a.rtmp.youtube.com/live2/${youtubeKey}`]
+      }]
+      
+      console.log('YouTube streaming configured with key:', youtubeKey.substring(0, 8) + '...')
 
       const egressResponse = await fetch(`${livekitUrl.replace('wss://', 'https://')}/egress/start`, {
         method: 'POST',
