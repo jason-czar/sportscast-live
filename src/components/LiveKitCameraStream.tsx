@@ -57,7 +57,8 @@ export function LiveKitCameraStream({
           video: { 
             width: { ideal: 1920 },
             height: { ideal: 1080 },
-            frameRate: { ideal: 30 }
+            frameRate: { ideal: 30 },
+            facingMode: "environment" // Use back camera by default
           },
           audio: true
         });
