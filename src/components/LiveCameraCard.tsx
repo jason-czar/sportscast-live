@@ -35,6 +35,16 @@ export function LiveCameraCard({
   }, [videoTrack]);
 
   const cameraLabel = participant.metadata || participant.identity || 'Unknown Camera';
+  
+  // Debug logging
+  console.log('LiveCameraCard Debug:', {
+    participantIdentity: participant.identity,
+    hasVideoTrack: !!videoTrack,
+    videoTrackMuted: videoTrack?.isMuted,
+    connectionQuality: participant.connectionQuality,
+    videoPublications: participant.videoTrackPublications.size
+  });
+  
   // Check if camera is live based on video track existence and participant connection
   const isLive = videoTrack && participant.connectionQuality !== 'lost';
 

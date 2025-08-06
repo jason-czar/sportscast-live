@@ -88,17 +88,28 @@ const DirectorDashboard = () => {
     autoConnect: false
   });
 
-  // Get video tracks for camera participants
-  const videoTracks = useMemo(() => {
-    return getParticipantVideoTracks();
-  }, [getParticipantVideoTracks]);
-
   // Filter camera participants (exclude director)
   const cameraParticipants = useMemo(() => {
     return participants.filter(p => 
       p.identity.startsWith('camera_') && !p.identity.includes('director')
     );
   }, [participants]);
+
+  // Get video tracks for camera participants
+  const videoTracks = useMemo(() => {
+    const tracks = getParticipantVideoTracks();
+    console.log('DirectorDashboard videoTracks:', {
+      trackCount: tracks.size,
+      participantCount: participants.length,
+      cameraParticipantCount: cameraParticipants.length,
+      tracks: Array.from(tracks.entries()).map(([id, track]) => ({
+        participantId: id,
+        hasTrack: !!track,
+        isMuted: track?.isMuted
+      }))
+    });
+    return tracks;
+  }, [getParticipantVideoTracks, participants.length, cameraParticipants.length]);
   
   
   // Auto-connect to LiveKit room when event is loaded
