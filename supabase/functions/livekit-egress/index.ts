@@ -21,8 +21,21 @@ serve(async (req) => {
     const livekitApiKey = Deno.env.get('LIVEKIT_API_KEY')
     const livekitApiSecret = Deno.env.get('LIVEKIT_API_SECRET')
     const livekitUrl = Deno.env.get('LIVEKIT_WS_URL')
-    const youtubeKey = Deno.env.get('YOUTUBE_STREAM_KEY')
-    const twitchKey = Deno.env.get('TWITCH_STREAM_KEY')
+    
+    // Get event-specific stream keys from database, fallback to global keys
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+    
+    const { data: eventData } = await supabase
+      .from('events')
+      .select('youtube_stream_key, twitch_stream_key')
+      .eq('id', eventId)
+      .single()
+    
+    const youtubeKey = eventData?.youtube_stream_key || Deno.env.get('YOUTUBE_STREAM_KEY')
+    const twitchKey = eventData?.twitch_stream_key || Deno.env.get('TWITCH_STREAM_KEY')
 
     if (!livekitApiKey || !livekitApiSecret || !livekitUrl) {
       throw new Error('Missing LiveKit configuration')
@@ -107,11 +120,7 @@ serve(async (req) => {
       const egressData = await egressResponse.json()
       console.log('LiveKit egress started:', egressData)
 
-      // Update event status
-      const supabase = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      )
+      // Update event status using existing supabase instance
 
       const { error: updateError } = await supabase
         .from('events')
@@ -147,10 +156,7 @@ serve(async (req) => {
         throw new Error('Missing activeCamera for layout update')
       }
 
-      const supabase = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      )
+      // Use existing supabase instance
 
       // Get current event to find egress ID
       const { data: event, error: eventError } = await supabase
@@ -214,11 +220,7 @@ serve(async (req) => {
       )
 
     } else if (action === 'stop') {
-      // Stop egress - we'll need the egress ID from the database or event
-      const supabase = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      )
+      // Stop egress - use existing supabase instance
 
       // Update event status to ended
       const { error: updateError } = await supabase
