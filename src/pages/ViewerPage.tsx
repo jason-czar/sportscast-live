@@ -10,7 +10,7 @@ import LoadingSkeleton from "@/components/ui/LoadingSkeleton";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useRealtimePresence } from "@/hooks/useRealtimePresence";
 import { useRealtimeEventUpdates } from "@/hooks/useRealtimeEventUpdates";
-import TelegramStreaming from "@/components/TelegramStreaming";
+
 import LiveKitViewer from "@/components/LiveKitViewer";
 import AppHeader from "@/components/AppHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -22,8 +22,6 @@ interface EventData {
   status: string;
   program_url: string;
   streaming_type?: string;
-  telegram_channel_id?: string;
-  telegram_invite_link?: string;
   youtube_key?: string;
   twitch_key?: string;
 }
@@ -215,18 +213,7 @@ const ViewerPage = () => {
     <div className="min-h-screen bg-background">
       <AppHeader />
       {/* Check streaming type and render appropriate component */}
-      {event.streaming_type === 'telegram' ? (
-        <div className="container mx-auto px-4 py-6">
-          <TelegramStreaming
-            eventId={event.id}
-            eventName={event.name}
-            eventCode={event.id} // Using event ID as code for now
-            telegramChannelId={event.telegram_channel_id}
-            telegramInviteLink={event.telegram_invite_link}
-            isDirector={false}
-          />
-        </div>
-      ) : event.streaming_type === 'livekit' ? (
+      {event.streaming_type === 'livekit' ? (
         <>
           <div className="aspect-video">
             <LiveKitViewer />
@@ -395,7 +382,7 @@ const ViewerPage = () => {
       )}
 
       {/* Event Info and Chat */}
-      {event.streaming_type !== 'telegram' && event.streaming_type !== 'livekit' && (
+      {event.streaming_type !== 'livekit' && (
         <div className="container mx-auto px-4 py-6">
           <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'}`}>
             <div className={isMobile ? '' : 'lg:col-span-2'}>
