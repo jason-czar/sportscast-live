@@ -13,7 +13,7 @@ import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import CreateEvent from "./pages/CreateEvent";
 import JoinAsCamera from "./pages/JoinAsCamera";
-import CameraStream from "./pages/CameraStream";
+// CameraStream removed - using LiveKit only
 import TelegramCameraStream from "./pages/TelegramCameraStream";
 import { LiveKitCameraPage } from "./pages/LiveKitCameraPage";
 import DirectorDashboard from "./pages/DirectorDashboard";
@@ -76,16 +76,7 @@ const App = () => {
                   </ErrorBoundary>
                 } 
               />
-              <Route 
-                path="/camera/:cameraId" 
-                element={
-                  <ErrorBoundary>
-                    <ProtectedRoute>
-                      <CameraStream />
-                    </ProtectedRoute>
-                  </ErrorBoundary>
-                } 
-              />
+              {/* Legacy RTMP route removed - all cameras now use LiveKit */}
               <Route 
                 path="/camera/telegram/:eventId" 
                 element={
