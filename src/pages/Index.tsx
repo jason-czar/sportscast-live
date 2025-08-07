@@ -17,7 +17,7 @@ const Index = () => {
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-8 sm:py-16">
         <div className="text-center mb-8 sm:mb-16">
-          <h1 className={`font-bold mb-4 sm:mb-6 ${isMobile ? 'text-4xl' : 'text-6xl'}`}>
+          <h1 className={`font-bold mb-4 sm:mb-6 ${isMobile ? 'text-4xl pt-0' : 'text-6xl pt-[100px]'}`}>
             Multi-Camera Sports Streaming
           </h1>
           <p className={`text-muted-foreground mb-6 sm:mb-8 max-w-3xl mx-auto ${isMobile ? 'text-lg px-2' : 'text-xl'}`}>
