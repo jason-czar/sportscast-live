@@ -229,12 +229,11 @@ const DirectorDashboard = () => {
   const startStream = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('Starting LiveKit egress for event:', eventId);
+      console.log('Starting stream for event:', eventId);
       
-      const { data, error } = await supabase.functions.invoke('livekit-egress', {
+      const { data, error } = await supabase.functions.invoke('start-stream', {
         body: { 
-          eventId,
-          action: 'start'
+          eventId
         }
       });
 
