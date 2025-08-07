@@ -529,7 +529,7 @@ const DirectorDashboard = () => {
                   />
                 ) : cameraParticipants.length > 0 ? (
                   <iframe
-                    src={`${window.location.origin}/watch/${eventId}`}
+                    src={`${window.location.origin}/view/${eventId}`}
                     className="w-full h-full"
                     allowFullScreen
                     allow="autoplay; encrypted-media"
@@ -559,7 +559,7 @@ const DirectorDashboard = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(`${window.location.origin}/watch/${eventId}`, '_blank')}
+                    onClick={() => window.open(`${window.location.origin}/view/${eventId}`, '_blank')}
                     className="flex items-center gap-2"
                   >
                     <ExternalLink className="h-4 w-4" />

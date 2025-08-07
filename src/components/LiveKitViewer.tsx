@@ -8,7 +8,7 @@ import { Play, Users, Wifi, Monitor } from 'lucide-react';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 export default function LiveKitViewer() {
-  const { eventId } = useParams();
+  const { eventId } = useParams<{ eventId: string }>();
   const [room, setRoom] = useState<Room | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +18,10 @@ export default function LiveKitViewer() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!eventId) return;
+    if (!eventId) {
+      console.error('LiveKitViewer: No eventId provided');
+      return;
+    }
 
     const connectToRoom = async () => {
       try {
