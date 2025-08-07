@@ -135,13 +135,8 @@ serve(async (req) => {
     const playbackId = muxData?.data?.playback_ids?.[0]?.id ?? null;
     const muxPlaybackUrl = playbackId ? `https://stream.mux.com/${playbackId}.m3u8` : null;
 
-    // Determine initial status based on start time
-    const startDateTime = new Date(startTime);
-    const now = new Date();
-    const timeDiffMinutes = (startDateTime.getTime() - now.getTime()) / (1000 * 60);
-    
-    // If event starts within 5 minutes, mark as live. Otherwise scheduled.
-    const initialStatus = timeDiffMinutes <= 5 ? 'live' : 'scheduled';
+    // Always start events as 'scheduled' - require manual start
+    const initialStatus = 'scheduled';
 
     // Create YouTube live stream if user has YouTube connected
     let youtubeStreamData = null;
