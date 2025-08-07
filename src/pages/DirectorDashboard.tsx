@@ -529,33 +529,14 @@ const DirectorDashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Live Stream Player */}
               <div className="aspect-video bg-black rounded-lg overflow-hidden mb-4">
-                {event?.program_url ? (
-                  <iframe
-                    src={event.program_url}
-                    className="w-full h-full"
-                    allowFullScreen
-                    allow="autoplay; encrypted-media"
-                    frameBorder="0"
-                  />
-                ) : cameraParticipants.length > 0 ? (
-                  <iframe
-                    src={`${window.location.origin}/view/${eventId}`}
-                    className="w-full h-full"
-                    allowFullScreen
-                    allow="autoplay; encrypted-media"
-                    frameBorder="0"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <div className="text-center text-muted-foreground">
-                      <Play className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p>This video is unavailable</p>
-                      <p className="text-xs mt-1">Stream will appear here when cameras connect</p>
-                    </div>
-                  </div>
-                )}
+                <iframe
+                  src={`${window.location.origin}/view/${eventId}`}
+                  className="w-full h-full"
+                  allowFullScreen
+                  allow="autoplay; encrypted-media"
+                  frameBorder="0"
+                />
               </div>
 
               {/* Stream Links */}

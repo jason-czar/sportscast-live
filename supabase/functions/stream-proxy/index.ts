@@ -57,10 +57,6 @@ serve(async (req) => {
           // In production, this would be the actual Telegram live stream URL
           streamUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
           console.log('Using demo video for Telegram stream');
-        } else if (eventData.streaming_type === 'mobile' && eventData.mux_stream_id) {
-          // For mobile RTMP streams, use Mux's HLS endpoint
-          streamUrl = `https://stream.mux.com/${eventData.mux_stream_id}.m3u8`;
-          console.log('Using Mux HLS stream:', streamUrl);
         }
 
         // Fallback to event program URL if available and valid

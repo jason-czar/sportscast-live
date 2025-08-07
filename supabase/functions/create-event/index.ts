@@ -186,9 +186,11 @@ serve(async (req) => {
         mux_stream_id: muxData.data.id,
         program_url: streamingType === 'telegram' && telegramChannelData
           ? `https://t.me/${telegramChannelData.channelUsername}`
-          : (muxData.data.playback_ids && muxData.data.playback_ids.length > 0
-              ? `https://stream.mux.com/${muxData.data.playback_ids[0].id}.m3u8`
-              : null),
+          : streamingType === 'mobile'
+            ? (muxData.data.playback_ids && muxData.data.playback_ids.length > 0
+                ? `https://stream.mux.com/${muxData.data.playback_ids[0].id}.m3u8`
+                : null)
+            : null,
         status: initialStatus,
         owner_id: user.id,
         streaming_type: streamingType,
