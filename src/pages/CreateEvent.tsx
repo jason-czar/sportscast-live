@@ -211,7 +211,7 @@ const CreateEvent = () => {
                       setThumbnailPreview(null);
                     }
                   }}
-                  className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                  className="file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 file:cursor-pointer"
                 />
                 <p className="text-sm text-muted-foreground">
                   Upload an image that represents your stream. Good thumbnails stand out and draw viewers' attention.
