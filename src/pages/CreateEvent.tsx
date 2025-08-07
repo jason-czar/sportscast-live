@@ -38,6 +38,7 @@ const CreateEvent = () => {
     description: "",
     thumbnail: null as File | null
   });
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
 
   // Set default datetime to current local time
   useEffect(() => {
@@ -123,6 +124,11 @@ const CreateEvent = () => {
       navigate(`/director/${data.eventId}`);
     }
     setLoading(false);
+    
+    // Clean up thumbnail preview URL
+    if (thumbnailPreview) {
+      URL.revokeObjectURL(thumbnailPreview);
+    }
   };
   return <div className="min-h-screen bg-background">
       <AppHeader />
@@ -196,12 +202,52 @@ const CreateEvent = () => {
                       ...formData,
                       thumbnail: file
                     });
+                    
+                    // Create preview URL
+                    if (file) {
+                      const previewUrl = URL.createObjectURL(file);
+                      setThumbnailPreview(previewUrl);
+                    } else {
+                      setThumbnailPreview(null);
+                    }
                   }}
                   className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
                 />
                 <p className="text-sm text-muted-foreground">
                   Upload an image that represents your stream. Good thumbnails stand out and draw viewers' attention.
                 </p>
+                
+                {/* Thumbnail Preview */}
+                {thumbnailPreview && formData.eventName && (
+                  <div className="mt-4">
+                    <Label className="text-sm font-medium mb-2 block">Preview</Label>
+                    <div className="max-w-sm">
+                      <div className="relative group cursor-pointer">
+                        <div className="aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
+                          <img 
+                            src={thumbnailPreview} 
+                            alt="Thumbnail preview" 
+                            className="w-full h-full object-cover"
+                          />
+                          {/* YouTube-style play button overlay */}
+                          <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center">
+                              <div className="w-0 h-0 border-l-[8px] border-l-white border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent ml-1"></div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-2 space-y-1">
+                          <h3 className="font-medium text-sm line-clamp-2 leading-tight">
+                            {formData.eventName}
+                          </h3>
+                          <p className="text-xs text-muted-foreground">
+                            {formData.sportType && `${formData.sportType} • `}Live Stream
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
