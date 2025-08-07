@@ -211,7 +211,10 @@ const CreateEvent = () => {
                       setThumbnailPreview(null);
                     }
                   }}
-                  className="file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 file:cursor-pointer"
+                  className="text-transparent file:inline-block file:bg-black file:text-white file:border-0 file:cursor-pointer file:whitespace-nowrap file:text-center file:text-xs file:font-medium file:leading-none file:py-1 file:px-2 file:rounded"
+                  style={{
+                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                  }}
                 />
                 <p className="text-sm text-muted-foreground">
                   Upload an image that represents your stream. Good thumbnails stand out and draw viewers' attention.
