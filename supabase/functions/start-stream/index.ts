@@ -26,7 +26,7 @@ serve(async (req) => {
     // Get event data
     const { data: eventData, error: eventError } = await supabase
       .from('events')
-      .select('mux_stream_id')
+      .select('mux_stream_id, program_url')
       .eq('id', eventId)
       .single();
 
@@ -59,6 +59,46 @@ serve(async (req) => {
     }
 
     console.log('Mux stream started for event:', eventId);
+
+    // If program_url is not set, get the live stream details and update it
+    if (!eventData.program_url) {
+      console.log('Getting Mux live stream details to set program_url');
+      
+      // Get live stream details from Mux
+      const detailsResponse = await fetch(`https://api.mux.com/video/v1/live-streams/${eventData.mux_stream_id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (detailsResponse.ok) {
+        const detailsData = await detailsResponse.json();
+        const playbackId = detailsData.data?.playback_ids?.[0]?.id;
+        
+        if (playbackId) {
+          const programUrl = `https://stream.mux.com/${playbackId}.m3u8`;
+          console.log('Updating program_url to:', programUrl);
+          
+          // Update the event with the program URL
+          const { error: updateError } = await supabase
+            .from('events')
+            .update({ program_url: programUrl })
+            .eq('id', eventId);
+
+          if (updateError) {
+            console.error('Failed to update program_url:', updateError);
+          } else {
+            console.log('Successfully updated program_url');
+          }
+        } else {
+          console.error('No playback ID found in Mux response');
+        }
+      } else {
+        console.error('Failed to get Mux live stream details');
+      }
+    }
 
     return new Response(
       JSON.stringify({
