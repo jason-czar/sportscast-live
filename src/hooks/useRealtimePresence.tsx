@@ -181,8 +181,9 @@ export const useRealtimePresence = ({
     return () => {
       removeChannel(`event_${eventId}`);
       setCollaborationIndicators([]);
+      setChannel(null);
     };
-  }, [eventId, userId, userProfile, createChannel, removeChannel, handlePresenceSync, handlePresenceJoin, handlePresenceLeave, handleCollaborationEvent]);
+  }, [eventId, userId, userProfile?.role, userProfile?.display_name, userProfile?.avatar_url, createChannel, removeChannel]);
 
   const updatePresence = useCallback(async (data: Partial<PresenceUser>) => {
     if (channel && userId) {
