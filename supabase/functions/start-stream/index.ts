@@ -100,6 +100,22 @@ serve(async (req) => {
       }
     }
 
+    // Update event status to 'live'
+    const { error: statusError } = await supabase
+      .from('events')
+      .update({ 
+        status: 'live',
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', eventId);
+
+    if (statusError) {
+      console.error('Failed to update event status:', statusError);
+      throw new Error('Failed to update event status to live');
+    }
+
+    console.log('Event status updated to live for:', eventId);
+
     return new Response(
       JSON.stringify({
         success: true,
