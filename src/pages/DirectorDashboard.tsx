@@ -48,10 +48,12 @@ const DirectorDashboard = () => {
   const { handleAsyncError } = useErrorHandler();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentUserId] = useState(`director_${Math.random().toString(36).substr(2, 9)}`);
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const [activeCameraIdentity, setActiveCameraIdentity] = useState<string | null>(null);
   const isMobile = useIsMobile();
+  
+  // Generate stable user ID
+  const currentUserId = useMemo(() => `director_${Math.random().toString(36).substr(2, 9)}`, []);
   
   // Use real-time hooks for database updates
   const { viewerCount } = useRealtimePresence({ 
