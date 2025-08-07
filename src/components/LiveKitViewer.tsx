@@ -129,7 +129,7 @@ export default function LiveKitViewer() {
           }
         });
 
-        await newRoom.connect('wss://sportscast-live-u0m3hihj.livekit.cloud', tokenData.token);
+        await newRoom.connect(tokenData.wsUrl, tokenData.token);
         setRoom(newRoom);
         updateParticipants(newRoom);
 

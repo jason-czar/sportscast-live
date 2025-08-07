@@ -143,6 +143,15 @@ const DirectorDashboard = () => {
     }
   }, [event, roomConnected, roomConnecting, connectToRoom, eventId]);
 
+  // Auto-select first camera when cameras connect
+  useEffect(() => {
+    if (cameraParticipants.length > 0 && !selectedCameraId) {
+      const firstCamera = cameraParticipants[0];
+      console.log('Auto-selecting first camera:', firstCamera.identity);
+      setSelectedCameraId(firstCamera.identity);
+    }
+  }, [cameraParticipants.length, selectedCameraId]);
+
   // Handle camera selection from LiveKit participants
   const handleCameraSelect = useCallback((participantIdentity: string) => {
     setSelectedCameraId(participantIdentity);
@@ -403,12 +412,20 @@ const DirectorDashboard = () => {
                       <video
                         className="w-full h-full object-cover"
                         ref={(video) => {
-                          if (video && videoTracks.get(selectedCameraId)) {
-                            videoTracks.get(selectedCameraId)!.attach(video);
+                          const track = videoTracks.get(selectedCameraId);
+                          console.log('DirectorDashboard video ref callback:', { 
+                            hasVideo: !!video, 
+                            hasTrack: !!track,
+                            selectedCameraId,
+                            trackSid: track?.sid
+                          });
+                          if (video && track) {
+                            track.attach(video);
+                            console.log('Successfully attached track to video element');
                           }
                         }}
                         autoPlay
-                        muted
+                        muted={false}
                         playsInline
                       />
                     ) : (
