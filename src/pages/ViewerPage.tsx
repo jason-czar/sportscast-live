@@ -168,41 +168,38 @@ const ViewerPage = () => {
 
   // Determine the best streaming source
   const getStreamingSource = () => {
+    // Prefer explicit platforms first
     if (event?.youtube_key) {
       return {
-        type: 'youtube',
+        type: 'youtube' as const,
         url: `https://www.youtube.com/embed/live_stream?channel=${event.youtube_key}&autoplay=1&controls=1`,
         chatUrl: `https://www.youtube.com/live_chat?v=${event.youtube_key}&embed_domain=${window.location.hostname}`
       };
     }
     if (event?.twitch_key) {
       return {
-        type: 'twitch',
+        type: 'twitch' as const,
         url: `https://player.twitch.tv/?channel=${event.twitch_key}&parent=${window.location.hostname}&autoplay=true`,
         chatUrl: `https://www.twitch.tv/embed/${event.twitch_key}/chat?parent=${window.location.hostname}`
       };
     }
-    // Check if we have a program_url from the database
+    // HLS URL provided by backend
     if (event?.program_url) {
       return {
-        type: 'hls',
+        type: 'hls' as const,
         url: event.program_url,
         chatUrl: null
       };
     }
-    // For LiveKit events, construct the Mux stream URL if no program_url is set
-    if (event?.streaming_type === 'livekit') {
-      // Try to get an active camera's stream to build the viewer URL
-      const activeCameras = cameras.filter(cam => cam.is_live);
-      if (activeCameras.length > 0) {
-        // Use the LiveKit room viewer URL
-        const viewerUrl = `${window.location.origin}/view/${event.id}`;
-        return {
-          type: 'livekit',
-          url: viewerUrl,
-          chatUrl: null
-        };
-      }
+    // Fallback to LiveKit whenever cameras are publishing (no HLS/YouTube/Twitch)
+    const activeCameras = cameras.filter(cam => cam.is_live);
+    if (activeCameras.length > 0) {
+      const viewerUrl = `${window.location.origin}/view/${event.id}`;
+      return {
+        type: 'livekit' as const,
+        url: viewerUrl,
+        chatUrl: null
+      };
     }
     return null;
   };
@@ -213,7 +210,7 @@ const ViewerPage = () => {
     <div className="min-h-screen bg-background">
       <AppHeader />
       {/* Check streaming type and render appropriate component */}
-      {event.streaming_type === 'livekit' ? (
+      {streamingSource?.type === 'livekit' ? (
         <>
           <div className="aspect-video">
             <LiveKitViewer />
@@ -283,20 +280,12 @@ const ViewerPage = () => {
                     autoPlay
                     playsInline
                   />
-                ) : streamingSource.type === 'livekit' ? (
-                  <iframe
-                    src={streamingSource.url}
-                    className="w-full h-full"
-                    allowFullScreen
-                    allow="camera; microphone; autoplay"
-                    frameBorder="0"
-                  />
                 ) : (
                   <iframe
                     src={streamingSource.url}
                     className="w-full h-full"
                     allowFullScreen
-                    allow="autoplay; encrypted-media"
+                    allow="autoplay; fullscreen; picture-in-picture"
                     frameBorder="0"
                   />
                 )
