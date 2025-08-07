@@ -192,30 +192,65 @@ const CreateEvent = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="thumbnail">Thumbnail (Optional)</Label>
-                <Input
-                  id="thumbnail"
-                  type="file"
-                  accept="image/*"
-                  onChange={e => {
-                    const file = e.target.files?.[0] || null;
-                    setFormData({
-                      ...formData,
-                      thumbnail: file
-                    });
-                    
-                    // Create preview URL
-                    if (file) {
-                      const previewUrl = URL.createObjectURL(file);
-                      setThumbnailPreview(previewUrl);
-                    } else {
-                      setThumbnailPreview(null);
-                    }
-                  }}
-                  className="text-transparent file:inline-block file:bg-black file:text-white file:border-0 file:cursor-pointer file:whitespace-nowrap file:text-center file:text-xs file:font-medium file:leading-none file:py-1 file:px-2 file:rounded"
-                  style={{
-                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
-                  }}
-                />
+                <div>
+                  <Input
+                    id="thumbnail"
+                    type="file"
+                    accept="image/*"
+                    onChange={e => {
+                      const file = e.target.files?.[0] || null;
+                      setFormData({
+                        ...formData,
+                        thumbnail: file
+                      });
+                      
+                      // Create preview URL
+                      if (file) {
+                        const previewUrl = URL.createObjectURL(file);
+                        setThumbnailPreview(previewUrl);
+                      } else {
+                        setThumbnailPreview(null);
+                      }
+                    }}
+                    style={{
+                      color: 'transparent'
+                    }}
+                  />
+                  <style dangerouslySetInnerHTML={{
+                    __html: `
+                      #thumbnail::-webkit-file-upload-button {
+                        display: inline-block;
+                        background-color: #272727;
+                        color: #fff;
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                        font-size: 12px;
+                        font-weight: 500;
+                        line-height: 1;
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        text-align: center;
+                        white-space: nowrap;
+                        border: none;
+                        cursor: pointer;
+                      }
+                      #thumbnail::file-selector-button {
+                        display: inline-block;
+                        background-color: #272727;
+                        color: #fff;
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                        font-size: 12px;
+                        font-weight: 500;
+                        line-height: 1;
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        text-align: center;
+                        white-space: nowrap;
+                        border: none;
+                        cursor: pointer;
+                      }
+                    `
+                  }} />
+                </div>
                 <p className="text-sm text-muted-foreground">
                   Upload an image that represents your stream. Good thumbnails stand out and draw viewers' attention.
                 </p>
