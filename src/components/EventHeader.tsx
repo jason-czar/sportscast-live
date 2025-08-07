@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/ca
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LoadingButton from "@/components/ui/LoadingButton";
-import { Monitor, Play, Square, Settings, Eye } from "lucide-react";
+import { Monitor, Play, Square, Settings, Eye, ExternalLink } from "lucide-react";
 
 interface EventData {
   id: string;
@@ -61,6 +61,17 @@ const EventHeader = memo(({
             </CardDescription>
           </div>
           <div className="flex gap-2">
+            <Button 
+              asChild 
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <a href={`/watch/${event.id}`} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4" />
+                Watch Stream
+              </a>
+            </Button>
+            
             {!streaming ? (
               <Button onClick={onStartStream} disabled={loading || cameraCount === 0}>
                 <Play className="h-4 w-4 mr-2" />
