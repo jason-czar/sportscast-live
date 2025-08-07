@@ -527,7 +527,7 @@ const DirectorDashboard = () => {
                     allow="autoplay; encrypted-media"
                     frameBorder="0"
                   />
-                ) : cameras.some(cam => cam.is_live) ? (
+                ) : cameraParticipants.length > 0 ? (
                   <iframe
                     src={`${window.location.origin}/watch/${eventId}`}
                     className="w-full h-full"
@@ -547,7 +547,7 @@ const DirectorDashboard = () => {
               </div>
 
               {/* Stream Links */}
-              {cameras.some(cam => cam.is_live) && (
+              {cameraParticipants.length > 0 && (
                 <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
                   <div className="flex items-center gap-3">
                     <Wifi className="h-5 w-5 text-green-600" />
