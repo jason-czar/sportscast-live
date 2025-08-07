@@ -206,6 +206,16 @@ const ViewerPage = () => {
 
   const streamingSource = getStreamingSource();
 
+  const onlineUsersBadge = useMemo(() => {
+    if (onlineUsers.length === 0) return null;
+    return (
+      <Badge variant="outline" className="bg-black/50 text-white border-white/20">
+        <Users className="h-3 w-3 mr-1" />
+        {onlineUsers.length} live
+      </Badge>
+    );
+  }, [onlineUsers.length]);
+
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
@@ -359,12 +369,7 @@ const ViewerPage = () => {
                 <Eye className="h-3 w-3 mr-1" />
                 {viewerCount.toLocaleString()} watching
               </Badge>
-              {useMemo(() => onlineUsers.length > 0 && (
-                <Badge variant="outline" className="bg-black/50 text-white border-white/20">
-                  <Users className="h-3 w-3 mr-1" />
-                  {onlineUsers.length} live
-                </Badge>
-              ), [onlineUsers.length])}
+              {onlineUsersBadge}
             </div>
           </div>
         </>
