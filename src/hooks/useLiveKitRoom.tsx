@@ -185,6 +185,12 @@ export function useLiveKitRoom({
       });
 
       // Connect to the room
+      console.log('Connecting to LiveKit room with details:', {
+        wsUrl: data.wsUrl,
+        roomName: data.roomName,
+        participantIdentity,
+        participantName
+      });
       await room.connect(data.wsUrl, data.token);
 
     } catch (error) {

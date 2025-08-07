@@ -99,16 +99,22 @@ const DirectorDashboard = () => {
   const videoTracks = useMemo(() => {
     const tracks = getParticipantVideoTracks();
     console.log('DirectorDashboard videoTracks:', {
+      roomConnected,
       trackCount: tracks.size,
       participantCount: participants.length,
       cameraParticipantCount: cameraParticipants.length,
+      roomIdentity: room?.localParticipant?.identity,
+      roomName: room?.name,
       allParticipants: participants.map(p => ({
         identity: p.identity,
+        metadata: p.metadata,
         videoPublications: p.videoTrackPublications.size,
+        audioPublications: p.audioTrackPublications.size,
         publications: Array.from(p.videoTrackPublications.values()).map(pub => ({
           trackSid: pub.trackSid,
           isSubscribed: pub.isSubscribed,
-          hasTrack: !!pub.track
+          hasTrack: !!pub.track,
+          isMuted: pub.track?.isMuted
         }))
       })),
       tracks: Array.from(tracks.entries()).map(([id, track]) => ({
@@ -118,7 +124,7 @@ const DirectorDashboard = () => {
       }))
     });
     return tracks;
-  }, [getParticipantVideoTracks, participants.length, cameraParticipants.length]);
+  }, [getParticipantVideoTracks, participants.length, cameraParticipants.length, roomConnected, room]);
   
   
   // Calculate streaming status
@@ -127,7 +133,12 @@ const DirectorDashboard = () => {
   // Auto-connect to LiveKit room when event is loaded
   useEffect(() => {
     if (event && !roomConnected && !roomConnecting) {
-      console.log('Auto-connecting director to LiveKit room:', eventId);
+      console.log('Auto-connecting director to LiveKit room:', {
+        eventId,
+        eventData: event,
+        roomConnected,
+        roomConnecting
+      });
       connectToRoom();
     }
   }, [event, roomConnected, roomConnecting, connectToRoom, eventId]);
