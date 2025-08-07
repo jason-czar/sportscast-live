@@ -2,203 +2,116 @@
 @tailwind components;
 @tailwind utilities;
 
-/* iOS-style Dark Card-Based Design System */
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
 
 @layer base {
   :root {
-    /* Canvas & Surface Colors */
-    --background: 238 19% 8%;           /* #121217 */
-    --foreground: 0 0% 100%;            /* #FFFFFF */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
 
-    /* Card & Panel Colors */
-    --card: 240 11% 13%;                /* #1E1E24 */
-    --card-foreground: 0 0% 100%;       /* #FFFFFF */
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
 
-    /* Popover Colors */
-    --popover: 240 11% 13%;             /* #1E1E24 */
-    --popover-foreground: 0 0% 100%;    /* #FFFFFF */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
 
-    /* Primary Accent */
-    --primary: 219 100% 59%;            /* #2979FF */
-    --primary-foreground: 0 0% 100%;    /* #FFFFFF */
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
 
-    /* Secondary Surfaces */
-    --secondary: 240 11% 18%;           /* #2A2A33 */
-    --secondary-foreground: 0 0% 89%;   /* #E3E3E3 */
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
 
-    /* Muted Elements */
-    --muted: 240 11% 18%;               /* #2A2A33 */
-    --muted-foreground: 0 0% 89%;       /* #E3E3E3 with 60% opacity */
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
 
-    /* Accent Colors */
-    --accent: 219 100% 59%;             /* #2979FF */
-    --accent-foreground: 0 0% 100%;     /* #FFFFFF */
+    --accent: 221 83% 53%;
+    --accent-foreground: 210 40% 98%;
 
-    /* Status Colors */
-    --destructive: 0 84% 60%;           /* Red */
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
 
-    --success: 142 76% 50%;             /* Green */
-    --success-foreground: 0 0% 100%;
+    --success: 142 76% 36%;
+    --success-foreground: 210 40% 98%;
 
-    --warning: 38 92% 60%;              /* Orange */
-    --warning-foreground: 0 0% 0%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 222.2 47.4% 11.2%;
 
-    /* Borders & Inputs */
-    --border: 0 0% 100%;                /* White with 8% opacity via tailwind */
-    --input: 240 11% 18%;               /* #2A2A33 */
-    --ring: 219 100% 59%;               /* #2979FF */
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
 
-    /* Border radius - iOS style */
-    --radius: 0.5rem;                   /* 8px */
+    --radius: 0.5rem;
 
-    /* Sidebar Colors */
-    --sidebar-background: 240 11% 13%;  /* #1E1E24 */
-    --sidebar-foreground: 0 0% 89%;     /* #E3E3E3 */
-    --sidebar-primary: 219 100% 59%;    /* #2979FF */
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 11% 18%;      /* #2A2A33 */
-    --sidebar-accent-foreground: 0 0% 89%;
-    --sidebar-border: 0 0% 100%;        /* White with 8% opacity */
-    --sidebar-ring: 219 100% 59%;
+    --sidebar-background: 0 0% 98%;
 
-    /* Spacing System */
-    --spacing-xs: 0.25rem;              /* 4px */
-    --spacing-sm: 0.5rem;               /* 8px */
-    --spacing-md: 0.75rem;              /* 12px */
-    --spacing-base: 1rem;               /* 16px */
-    --spacing-lg: 1.25rem;              /* 20px */
-    --spacing-xl: 1.5rem;               /* 24px */
+    --sidebar-foreground: 240 5.3% 26.1%;
 
-    /* Card Shadows */
-    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.4);
-    --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.5);
+    --sidebar-primary: 240 5.9% 10%;
 
-    /* Typography */
-    --font-display: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
-    --font-text: -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    /* Keep same values for dark mode since we're already dark */
-    --background: 238 19% 8%;
+    --background: 0 0% 0%;
     --foreground: 0 0% 100%;
-    --card: 240 11% 13%;
+
+    --card: 0 0% 0%;
     --card-foreground: 0 0% 100%;
-    --popover: 240 11% 13%;
+
+    --popover: 0 0% 0%;
     --popover-foreground: 0 0% 100%;
-    --primary: 219 100% 59%;
+
+    --primary: 221 83% 53%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 240 11% 18%;
-    --secondary-foreground: 0 0% 89%;
-    --muted: 240 11% 18%;
-    --muted-foreground: 0 0% 89%;
-    --accent: 219 100% 59%;
+
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 70%;
+
+    --accent: 221 83% 53%;
     --accent-foreground: 0 0% 100%;
+
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
+
     --success: 142 76% 50%;
     --success-foreground: 0 0% 100%;
+
     --warning: 38 92% 60%;
     --warning-foreground: 0 0% 0%;
-    --border: 0 0% 100%;
-    --input: 240 11% 18%;
-    --ring: 219 100% 59%;
-    --sidebar-background: 240 11% 13%;
-    --sidebar-foreground: 0 0% 89%;
-    --sidebar-primary: 219 100% 59%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 0% 100%;
+    --sidebar-background: 0 0% 0%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 221 83% 53%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 11% 18%;
-    --sidebar-accent-foreground: 0 0% 89%;
-    --sidebar-border: 0 0% 100%;
-    --sidebar-ring: 219 100% 59%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 0 0% 100%;
   }
 }
 
 @layer base {
   * {
-    @apply border-border/[0.08];
+    @apply border-border;
   }
 
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-text);
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-display);
-    font-weight: 600;
-  }
-
-  h1 {
-    @apply text-2xl;
-  }
-
-  h2 {
-    @apply text-xl;
-  }
-}
-
-@layer components {
-  /* iOS-style Card Component */
-  .card-ios {
-    @apply bg-card text-card-foreground rounded-lg p-4;
-    box-shadow: var(--shadow-card);
-    transition: box-shadow 0.2s ease;
-  }
-
-  .card-ios:hover {
-    box-shadow: var(--shadow-card-hover);
-  }
-
-  /* iOS-style Button Variants */
-  .btn-ios-primary {
-    @apply bg-primary text-primary-foreground rounded-lg px-6 py-3 font-medium;
-    transition: all 0.2s ease;
-  }
-
-  .btn-ios-primary:hover {
-    @apply bg-primary/90;
-  }
-
-  .btn-ios-secondary {
-    @apply bg-transparent text-primary border-2 border-primary rounded-lg px-6 py-3 font-medium;
-    transition: all 0.2s ease;
-  }
-
-  .btn-ios-secondary:hover {
-    @apply bg-primary/10;
-  }
-
-  /* iOS-style Input Fields */
-  .input-ios {
-    @apply bg-input text-foreground border border-border/[0.12] rounded-lg px-3 py-2.5;
-    transition: all 0.2s ease;
-  }
-
-  .input-ios:focus {
-    @apply outline-none ring-2 ring-ring border-ring;
-  }
-
-  .input-ios::placeholder {
-    @apply text-muted-foreground/50;
-  }
-
-  /* Navigation Bar */
-  .nav-ios {
-    @apply bg-sidebar-background h-14 border-b border-sidebar-border/[0.08];
-  }
-
-  /* Text Utilities */
-  .text-secondary {
-    @apply text-secondary-foreground/60;
-  }
-
-  .text-hint {
-    @apply text-secondary-foreground/30;
-  }
-
-  .text-caption {
-    @apply text-sm text-secondary-foreground/60;
   }
 }
