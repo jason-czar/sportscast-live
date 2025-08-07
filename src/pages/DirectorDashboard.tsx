@@ -421,11 +421,23 @@ const DirectorDashboard = () => {
                           });
                           if (video && track) {
                             track.attach(video);
+                            // Ensure autoplay works across browsers
+                            try {
+                              video.muted = true;
+                              const p = video.play();
+                              if (p && typeof (p as any).catch === 'function') {
+                                (p as Promise<void>).catch(err => {
+                                  console.warn('Program feed autoplay prevented; waiting for user gesture', err);
+                                });
+                              }
+                            } catch (e) {
+                              console.warn('Error calling video.play()', e);
+                            }
                             console.log('Successfully attached track to video element');
                           }
                         }}
                         autoPlay
-                        muted={false}
+                        muted
                         playsInline
                       />
                     ) : (

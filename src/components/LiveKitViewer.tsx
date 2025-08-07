@@ -176,6 +176,18 @@ export default function LiveKitViewer() {
   const attachVideoTrack = (track: RemoteVideoTrack) => {
     if (videoRef.current) {
       track.attach(videoRef.current);
+      // Enable reliable autoplay: start muted, then allow user to unmute
+      try {
+        videoRef.current.muted = true;
+        const p = videoRef.current.play();
+        if (p && typeof (p as any).catch === 'function') {
+          (p as Promise<void>).catch(() => {
+            // Autoplay might still be blocked on some browsers until user gesture
+          });
+        }
+      } catch (e) {
+        // ignore
+      }
     }
   };
 
@@ -214,7 +226,7 @@ export default function LiveKitViewer() {
             className="w-full h-full object-cover"
             autoPlay
             playsInline
-            muted={false}
+            muted
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
