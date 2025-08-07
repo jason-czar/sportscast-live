@@ -114,7 +114,7 @@ serve(async (req) => {
       body: JSON.stringify({
         playback_policy: ['public'],
         new_asset_settings: { 
-          playbook_policy: ['public'] 
+          playback_policy: ['public'] 
         },
         reconnect_window: 60,
         latency_mode: 'low', // Use low latency mode for 5-15s glass-to-glass
@@ -186,7 +186,9 @@ serve(async (req) => {
         mux_stream_id: muxData.data.id,
         program_url: streamingType === 'telegram' && telegramChannelData
           ? `https://t.me/${telegramChannelData.channelUsername}`
-          : muxData.data.playback_ids[0]?.url || null,
+          : (muxData.data.playback_ids && muxData.data.playback_ids.length > 0
+              ? `https://stream.mux.com/${muxData.data.playback_ids[0].id}.m3u8`
+              : null),
         status: initialStatus,
         owner_id: user.id,
         streaming_type: streamingType,

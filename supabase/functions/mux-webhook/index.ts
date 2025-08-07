@@ -81,9 +81,9 @@ serve(async (req) => {
 
 async function handleStreamActive(supabase: any, streamData: any) {
   console.log('Stream went active:', streamData.id);
-  
+
   // Update event status to live
-  const { error } = await supabase
+  const { error: statusError } = await supabase
     .from('events')
     .update({ 
       status: 'live',
@@ -91,8 +91,51 @@ async function handleStreamActive(supabase: any, streamData: any) {
     })
     .eq('mux_stream_id', streamData.id);
 
-  if (error) {
-    console.error('Error updating event status to live:', error);
+  if (statusError) {
+    console.error('Error updating event status to live:', statusError);
+  }
+
+  // Also set program_url from Mux playback ID if available
+  try {
+    const muxTokenId = Deno.env.get('MUX_TOKEN_ID');
+    const muxSecretKey = Deno.env.get('MUX_SECRET_KEY');
+    if (!muxTokenId || !muxSecretKey) {
+      console.warn('Mux credentials missing; cannot fetch playback URL');
+      return;
+    }
+
+    const auth = btoa(`${muxTokenId}:${muxSecretKey}`);
+    const muxRes = await fetch(`https://api.mux.com/video/v1/live-streams/${streamData.id}`, {
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!muxRes.ok) {
+      console.warn('Failed to fetch Mux live stream details');
+      return;
+    }
+
+    const muxJson = await muxRes.json();
+    const playbackId = muxJson?.data?.playback_ids?.find((p: any) => p.policy === 'public')?.id
+      || muxJson?.data?.playback_ids?.[0]?.id;
+
+    if (playbackId) {
+      const playbackUrl = `https://stream.mux.com/${playbackId}.m3u8`;
+      const { error: urlError } = await supabase
+        .from('events')
+        .update({ program_url: playbackUrl, updated_at: new Date().toISOString() })
+        .eq('mux_stream_id', streamData.id);
+
+      if (urlError) {
+        console.error('Error updating program_url:', urlError);
+      } else {
+        console.log('program_url set from Mux playback ID');
+      }
+    }
+  } catch (e) {
+    console.error('Error fetching/setting Mux playback URL:', e);
   }
 }
 
@@ -129,18 +172,46 @@ async function handleStreamRecording(supabase: any, streamData: any) {
 
 async function handleStreamCompleted(supabase: any, assetData: any) {
   console.log('Stream completed, asset ready:', assetData.id);
-  
-  // Update event with completed asset information
-  const { error } = await supabase
-    .from('events')
-    .update({ 
-      status: 'ended',
-      recording_url: assetData.playback_ids?.[0]?.url,
-      ended_at: new Date().toISOString()
-    })
-    .eq('mux_stream_id', assetData.live_stream_id);
 
-  if (error) {
-    console.error('Error updating event with completed asset:', error);
+  // Fetch asset details to get playback ID
+  try {
+    const muxTokenId = Deno.env.get('MUX_TOKEN_ID');
+    const muxSecretKey = Deno.env.get('MUX_SECRET_KEY');
+    let recordingUrl: string | null = null;
+    if (muxTokenId && muxSecretKey) {
+      const auth = btoa(`${muxTokenId}:${muxSecretKey}`);
+      const assetRes = await fetch(`https://api.mux.com/video/v1/assets/${assetData.id}`, {
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (assetRes.ok) {
+        const assetJson = await assetRes.json();
+        const assetPlaybackId = assetJson?.data?.playback_ids?.find((p: any) => p.policy === 'public')?.id
+          || assetJson?.data?.playback_ids?.[0]?.id;
+        if (assetPlaybackId) {
+          recordingUrl = `https://stream.mux.com/${assetPlaybackId}.m3u8`;
+        }
+      }
+    } else {
+      console.warn('Mux credentials missing; cannot fetch asset playback URL');
+    }
+
+    // Update event with completed asset information
+    const { error } = await supabase
+      .from('events')
+      .update({ 
+        status: 'ended',
+        recording_url: recordingUrl,
+        ended_at: new Date().toISOString()
+      })
+      .eq('mux_stream_id', assetData.live_stream_id);
+  
+    if (error) {
+      console.error('Error updating event with completed asset:', error);
+    }
+  } catch (e) {
+    console.error('Error fetching asset details:', e);
   }
 }

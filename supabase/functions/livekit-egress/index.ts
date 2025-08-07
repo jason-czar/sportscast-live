@@ -116,7 +116,6 @@ serve(async (req) => {
         .from('events')
         .update({ 
           status: 'live',
-          mux_stream_id: egressData.egress_id,
           updated_at: new Date().toISOString()
         })
         .eq('id', eventId)
