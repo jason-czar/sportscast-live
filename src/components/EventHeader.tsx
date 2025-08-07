@@ -66,7 +66,7 @@ const EventHeader = memo(({
               variant="outline"
               className="flex items-center gap-2"
             >
-              <a href={`/watch/${event.id}`} target="_blank" rel="noopener noreferrer">
+              <a href={`/view/${event.id}`} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-4 w-4" />
                 Watch Stream
               </a>
