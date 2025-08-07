@@ -131,6 +131,24 @@ serve(async (req) => {
     const muxData = await muxResponse.json();
     console.log('Mux stream created:', muxData.data.id);
 
+    // Automatically enable the Mux live stream
+    console.log('Auto-enabling Mux live stream...');
+    const enableResponse = await fetch(`https://api.mux.com/video/v1/live-streams/${muxData.data.id}/enable`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (enableResponse.ok) {
+      console.log('Mux stream auto-enabled successfully');
+    } else {
+      const enableError = await enableResponse.text();
+      console.warn('Failed to auto-enable Mux stream:', enableError);
+      // Don't fail the whole operation, just log the warning
+    }
+
     // Generate Mux playback URL
     const playbackId = muxData?.data?.playback_ids?.[0]?.id ?? null;
     const muxPlaybackUrl = playbackId ? `https://stream.mux.com/${playbackId}.m3u8` : null;
