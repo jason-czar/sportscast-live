@@ -190,8 +190,6 @@ serve(async (req) => {
         status: initialStatus,
         owner_id: user.id,
         streaming_type: streamingType,
-        telegram_channel_id: telegramChannelData?.channelId || null,
-        telegram_invite_link: telegramChannelData?.inviteLink || null,
         youtube_broadcast_id: youtubeStreamData?.broadcast?.id || null,
         youtube_stream_id: youtubeStreamData?.stream?.id || null,
         youtube_stream_key: youtubeStreamData?.stream?.streamName || null
