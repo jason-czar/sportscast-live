@@ -201,46 +201,54 @@ export const useRealtimeEventUpdates = ({
     loadEventData();
     loadCameras();
 
-    // Create real-time channels
-    const eventChannel = supabase.channel(`event_updates_${eventId}`);
-    const cameraChannel = supabase.channel(`camera_updates_${eventId}`);
-    const switchChannel = supabase.channel(`switch_logs_${eventId}`);
+    // Create real-time channels using the connection manager
+    const eventChannel = createChannel(`event_updates_${eventId}`, {
+      postgres_changes: {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'events',
+        filter: `id=eq.${eventId}`
+      }
+    });
 
-    // Subscribe to real-time updates with enhanced error handling
-    eventChannel
-      .on('postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'events', filter: `id=eq.${eventId}` },
-        handleEventUpdate
-      )
-      .on('broadcast', { event: 'event_updated' }, (payload) => {
-        console.log('[RealtimeEvents] Broadcast event update received:', payload);
-      })
-      .subscribe((status) => {
-        console.log('[RealtimeEvents] Event channel status:', status);
-      });
+    const cameraChannel = createChannel(`camera_updates_${eventId}`, {
+      postgres_changes: {
+        event: '*',
+        schema: 'public',
+        table: 'cameras',
+        filter: `event_id=eq.${eventId}`
+      }
+    });
 
-    cameraChannel
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'cameras', filter: `event_id=eq.${eventId}` },
-        handleCameraUpdate
-      )
-      .subscribe((status) => {
-        console.log('[RealtimeEvents] Camera channel status:', status);
-      });
+    const switchChannel = createChannel(`switch_logs_${eventId}`, {
+      postgres_changes: {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'switch_logs',
+        filter: `event_id=eq.${eventId}`
+      }
+    });
 
-    switchChannel
-      .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'switch_logs', filter: `event_id=eq.${eventId}` },
-        handleCameraSwitch
-      )
-      .subscribe((status) => {
-        console.log('[RealtimeEvents] Switch channel status:', status);
-      });
+    // Subscribe to updates
+    if (eventChannel) {
+      eventChannel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'events', filter: `id=eq.${eventId}` }, handleEventUpdate);
+      eventChannel.subscribe();
+    }
+
+    if (cameraChannel) {
+      cameraChannel.on('postgres_changes', { event: '*', schema: 'public', table: 'cameras', filter: `event_id=eq.${eventId}` }, handleCameraUpdate);
+      cameraChannel.subscribe();
+    }
+
+    if (switchChannel) {
+      switchChannel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'switch_logs', filter: `event_id=eq.${eventId}` }, handleCameraSwitch);
+      switchChannel.subscribe();
+    }
 
     return () => {
-      supabase.removeChannel(eventChannel);
-      supabase.removeChannel(cameraChannel);
-      supabase.removeChannel(switchChannel);
+      removeChannel(`event_updates_${eventId}`);
+      removeChannel(`camera_updates_${eventId}`);
+      removeChannel(`switch_logs_${eventId}`);
     };
   }, [eventId, loadEventData, loadCameras, handleEventUpdate, handleCameraUpdate, handleCameraSwitch, createChannel, removeChannel]);
 
