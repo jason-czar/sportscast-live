@@ -28,8 +28,12 @@ const AppHeader = () => {
     <header className="border-b">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className={`font-bold hover:text-primary ${isMobile ? 'text-xl' : 'text-2xl'}`}>
-            Sportscast Live
+          <Link to="/" className="hover:opacity-80 transition-opacity">
+            <img 
+              src="/lovable-uploads/e67836c1-4683-4443-9a0b-2cebdeddb921.png" 
+              alt="Sportscast Live" 
+              className={`${isMobile ? 'h-8' : 'h-10'}`}
+            />
           </Link>
           
           {isMobile ? (
