@@ -131,6 +131,10 @@ serve(async (req) => {
     const muxData = await muxResponse.json();
     console.log('Mux stream created:', muxData.data.id);
 
+    // Generate Mux playback URL
+    const playbackId = muxData?.data?.playback_ids?.[0]?.id ?? null;
+    const muxPlaybackUrl = playbackId ? `https://stream.mux.com/${playbackId}.m3u8` : null;
+
     // Determine initial status based on start time
     const startDateTime = new Date(startTime);
     const now = new Date();
@@ -186,11 +190,7 @@ serve(async (req) => {
         mux_stream_id: muxData.data.id,
         program_url: streamingType === 'telegram' && telegramChannelData
           ? `https://t.me/${telegramChannelData.channelUsername}`
-          : streamingType === 'mobile'
-            ? (muxData.data.playback_ids && muxData.data.playback_ids.length > 0
-                ? `https://stream.mux.com/${muxData.data.playback_ids[0].id}.m3u8`
-                : null)
-            : null,
+          : muxPlaybackUrl,
         status: initialStatus,
         owner_id: user.id,
         streaming_type: streamingType,
