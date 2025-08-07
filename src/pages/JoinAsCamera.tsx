@@ -214,9 +214,12 @@ const validateEventCode = async (codeOverride?: string) => {
     if (code) {
       setEventCode(code);
       toastService.success({ title: 'QR scanned', description: `Event code ${code} detected` });
-      setActiveTab('manual');
+      // Switch back to manual entry and resume camera preview
+      handleTabChange('manual');
       setIsScanning(false);
       validateEventCode(code);
+      // Ensure camera preview restarts promptly
+      if (!stream) startVideoPreview();
     }
   };
 
