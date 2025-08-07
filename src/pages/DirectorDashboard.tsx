@@ -38,9 +38,16 @@ interface EventData {
   sport: string;
   event_code: string;
   status: string;
-  program_url: string;
+  program_url?: string;
+  mux_stream_id?: string;
   youtube_key?: string;
   twitch_key?: string;
+  created_at?: string;
+  updated_at?: string;
+  owner_id?: string;
+  description?: string;
+  scheduled_start?: string;
+  expected_duration?: number;
 }
 
 const DirectorDashboard = () => {
@@ -231,6 +238,7 @@ const DirectorDashboard = () => {
       setLoading(true);
       console.log('Starting stream for event:', eventId);
       
+      // Start the Mux stream and update status
       const { data, error } = await supabase.functions.invoke('start-stream', {
         body: { 
           eventId
@@ -238,16 +246,32 @@ const DirectorDashboard = () => {
       });
 
       if (error) {
-        console.error('LiveKit egress start error:', error);
+        console.error('Stream start error:', error);
         throw error;
       }
 
-      console.log('LiveKit egress start response:', data);
+      console.log('Stream start response:', data);
 
-      await supabase
-        .from('events')
-        .update({ status: 'live' })
-        .eq('id', eventId);
+      // Start LiveKit egress to bridge LiveKit to Mux RTMP
+      if (event && 'mux_stream_id' in event && event.mux_stream_id) {
+        try {
+          const { error: egressError } = await supabase.functions.invoke('livekit-egress', {
+            body: { 
+              eventId,
+              action: 'start',
+              muxStreamId: event.mux_stream_id
+            }
+          });
+
+          if (egressError) {
+            console.warn('LiveKit egress start warning:', egressError);
+            // Don't fail the entire stream start if egress fails
+          }
+        } catch (egressError) {
+          console.warn('LiveKit egress failed:', egressError);
+          // Continue without egress
+        }
+      }
 
       toastService.event.streamStarted();
     } catch (error) {
@@ -259,24 +283,31 @@ const DirectorDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [eventId]);
+  }, [eventId, event]);
 
   const endStream = useCallback(async () => {
     try {
       setLoading(true);
-      const { error } = await supabase.functions.invoke('livekit-egress', {
-        body: { 
-          eventId,
-          action: 'stop'
-        }
+      
+      // Stop LiveKit egress first
+      try {
+        await supabase.functions.invoke('livekit-egress', {
+          body: { 
+            eventId,
+            action: 'stop'
+          }
+        });
+      } catch (egressError) {
+        console.warn('Failed to stop egress:', egressError);
+        // Continue with ending the stream
+      }
+
+      // End the Mux stream and update status
+      const { error } = await supabase.functions.invoke('end-stream', {
+        body: { eventId }
       });
 
       if (error) throw error;
-
-      await supabase
-        .from('events')
-        .update({ status: 'ended' })
-        .eq('id', eventId);
 
       toastService.event.streamEnded();
     } catch (error) {

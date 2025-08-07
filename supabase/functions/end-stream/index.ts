@@ -58,6 +58,22 @@ serve(async (req) => {
 
     console.log('Mux stream stopped for event:', eventId);
 
+    // Update event status to 'ended'
+    const { error: statusError } = await supabase
+      .from('events')
+      .update({ 
+        status: 'ended',
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', eventId);
+
+    if (statusError) {
+      console.error('Failed to update event status:', statusError);
+      throw new Error('Failed to update event status to ended');
+    }
+
+    console.log('Event status updated to ended for:', eventId);
+
     return new Response(
       JSON.stringify({
         success: true,
