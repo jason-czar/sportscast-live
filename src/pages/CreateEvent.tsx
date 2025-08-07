@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { toastService } from "@/lib/toast-service";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,7 +34,9 @@ const CreateEvent = () => {
     eventName: "",
     sportType: "",
     dateTime: "",
-    expectedDuration: "180"
+    expectedDuration: "180",
+    description: "",
+    thumbnail: null as File | null
   });
 
   // Set default datetime to current local time
@@ -101,7 +104,9 @@ const CreateEvent = () => {
           startTime: formData.dateTime,
           expectedDuration: parseInt(formData.expectedDuration),
           eventCode,
-          streamingType: 'livekit' // Always use LiveKit now
+          streamingType: 'livekit', // Always use LiveKit now
+          description: formData.description.trim() || undefined,
+          thumbnail: formData.thumbnail
         }
       });
       if (error) throw error;
@@ -159,6 +164,44 @@ const CreateEvent = () => {
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Description (Optional)</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={e => setFormData({
+                    ...formData,
+                    description: e.target.value
+                  })}
+                  placeholder="Tell viewers more about your stream..."
+                  className="min-h-[80px]"
+                  maxLength={500}
+                />
+                <p className="text-sm text-muted-foreground">
+                  {formData.description.length}/500 characters
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="thumbnail">Thumbnail (Optional)</Label>
+                <Input
+                  id="thumbnail"
+                  type="file"
+                  accept="image/*"
+                  onChange={e => {
+                    const file = e.target.files?.[0] || null;
+                    setFormData({
+                      ...formData,
+                      thumbnail: file
+                    });
+                  }}
+                  className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Upload an image that represents your stream. Good thumbnails stand out and draw viewers' attention.
+                </p>
               </div>
 
               <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>

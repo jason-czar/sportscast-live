@@ -38,7 +38,7 @@ serve(async (req) => {
       });
     }
 
-    const { name, sport, startTime, expectedDuration, eventCode, streamingType } = await req.json();
+    const { name, sport, startTime, expectedDuration, eventCode, streamingType, description, thumbnail } = await req.json();
 
     console.log('Creating event:', { name, sport, startTime, expectedDuration, eventCode, streamingType });
 
@@ -153,8 +153,10 @@ serve(async (req) => {
           body: JSON.stringify({
             action: 'createStream',
             eventId: 'temp', // We'll update this after event creation
-            title: `${name} - Live ${sport}`,
-            description: `Live streaming ${name} - ${sport} event. Join us for this exciting match!`
+            title: name,
+            description: description || `Live streaming ${name} - ${sport} event. Join us for this exciting match!`,
+            sportType: sport,
+            thumbnail: thumbnail
           })
         });
 

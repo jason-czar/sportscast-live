@@ -24,6 +24,13 @@ export const createEventSchema = z.object({
     .transform(val => parseInt(val))
     .refine(val => val >= 10 && val <= 600, 'Duration must be between 10 and 600 minutes'),
   
+  description: z.string()
+    .max(500, 'Description must not exceed 500 characters')
+    .optional(),
+  
+  thumbnail: z.any()
+    .optional(),
+  
   youtubeKey: z.string()
     .optional()
     .refine(val => !val || val.length >= 10, 'YouTube key must be at least 10 characters if provided'),

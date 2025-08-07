@@ -12,6 +12,8 @@ interface YouTubeStreamRequest {
   title?: string;
   description?: string;
   streamId?: string;
+  sportType?: string;
+  thumbnail?: any;
 }
 
 serve(async (req) => {
@@ -44,7 +46,7 @@ serve(async (req) => {
       });
     }
 
-    const { action, eventId, title, description, streamId }: YouTubeStreamRequest = await req.json();
+    const { action, eventId, title, description, streamId, sportType, thumbnail }: YouTubeStreamRequest = await req.json();
 
     // Get YouTube credentials from environment variables (centralized account)
     const clientId = Deno.env.get('YOUTUBE_CLIENT_ID');
@@ -125,6 +127,18 @@ serve(async (req) => {
       const streamTitle = title || (event ? `${event.name} - Live ${event.sport}` : 'Live Stream');
       const streamDescription = description || (event ? `Live streaming ${event.name} - ${event.sport} event. Join us for this exciting match!` : 'Live stream event');
       const scheduledStartTime = event?.start_time || new Date().toISOString();
+      
+      // Map sport type to YouTube category if provided
+      const categoryMap: { [key: string]: string } = {
+        'soccer': 'Sports',
+        'basketball': 'Sports',
+        'football': 'Sports',
+        'baseball': 'Sports',
+        'tennis': 'Sports',
+        'volleyball': 'Sports',
+        'other': 'Sports'
+      };
+      const categoryId = '17'; // Sports category ID on YouTube
 
       // Create YouTube live broadcast
       const broadcastResponse = await makeYouTubeRequest(
@@ -139,6 +153,7 @@ serve(async (req) => {
               title: streamTitle,
               description: streamDescription,
               scheduledStartTime: scheduledStartTime,
+              categoryId: categoryId,
             },
             status: {
               privacyStatus: 'public',
