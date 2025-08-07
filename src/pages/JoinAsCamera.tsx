@@ -16,6 +16,7 @@ import ErrorMessage from "@/components/error/ErrorMessage";
 import AppHeader from "@/components/AppHeader";
 import { Camera, Video, VideoOff, Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import QrReader from 'react-qr-scanner';
 
 const JoinAsCamera = () => {
   const navigate = useNavigate();
@@ -31,7 +32,10 @@ const JoinAsCamera = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [loading, setLoading] = useState(false);
   const [eventData, setEventData] = useState<any>(null);
-  const [cameraError, setCameraError] = useState<string | null>(null);
+const [cameraError, setCameraError] = useState<string | null>(null);
+const [activeTab, setActiveTab] = useState<'manual' | 'qr'>('manual');
+const [isScanning, setIsScanning] = useState(false);
+const [scanError, setScanError] = useState<string | null>(null);
 
   // Set event code from URL parameters on mount
   useEffect(() => {
@@ -59,7 +63,16 @@ const JoinAsCamera = () => {
     };
   }, []);
 
-  const startVideoPreview = async () => {
+const stopVideoPreview = () => {
+  if (stream) {
+    stream.getTracks().forEach((t) => t.stop());
+    setStream(null);
+  }
+};
+
+const startVideoPreview = async () => {
+  setCameraError(null);
+  if (isScanning) return;
     setCameraError(null);
     
     const { error } = await handleAsyncError(async () => {
@@ -111,7 +124,7 @@ const JoinAsCamera = () => {
     }
   };
 
-  const validateEventCode = async () => {
+const validateEventCode = async (codeOverride?: string) => {
     if (!isOnline) {
       toastService.error({
         description: 'Cannot validate event code while offline. Please check your connection.'
@@ -119,7 +132,9 @@ const JoinAsCamera = () => {
       return;
     }
 
-    if (!eventCode.trim()) {
+    const codeToUse = (codeOverride || eventCode || '').trim().toUpperCase();
+
+    if (!codeToUse) {
       toastService.error({
         description: "Please enter an event code.",
       });
@@ -137,7 +152,7 @@ const JoinAsCamera = () => {
       const { data, error } = await supabase
         .from('events')
         .select('*')
-        .eq('event_code', eventCode.toUpperCase())
+        .eq('event_code', codeToUse)
         .single();
 
       if (error || !data) {
@@ -146,6 +161,7 @@ const JoinAsCamera = () => {
       }
 
       setEventData(data);
+      setEventCode(codeToUse);
       
       // Auto-generate device label
       const generatedLabel = await generateDeviceLabel(data.id);
@@ -165,6 +181,48 @@ const JoinAsCamera = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+// QR helpers and handlers
+  const extractEventCode = (text: string): string | null => {
+    if (!text) return null;
+    try {
+      const url = new URL(text);
+      const code = url.searchParams.get('code');
+      if (code && /^[A-Z0-9]{6}$/i.test(code)) return code.toUpperCase();
+    } catch {}
+    const match = text.toUpperCase().match(/[A-Z0-9]{6}/);
+    return match ? match[0] : null;
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as 'manual' | 'qr');
+    if (value === 'qr') {
+      setScanError(null);
+      setIsScanning(true);
+      stopVideoPreview();
+    } else {
+      setIsScanning(false);
+      if (!stream) startVideoPreview();
+    }
+  };
+
+  const handleScan = (data: any) => {
+    if (!data) return;
+    const text = typeof data === 'string' ? data : (data?.text || '');
+    const code = extractEventCode(text);
+    if (code) {
+      setEventCode(code);
+      toastService.success({ title: 'QR scanned', description: `Event code ${code} detected` });
+      setActiveTab('manual');
+      setIsScanning(false);
+      validateEventCode(code);
+    }
+  };
+
+  const handleScanError = (err: any) => {
+    console.error('QR scan error:', err);
+    setScanError(err?.message || 'Unable to access camera for scanning');
   };
 
   const registerCamera = async () => {
@@ -270,7 +328,7 @@ const JoinAsCamera = () => {
 
               {/* Event Connection */}
               <div className="space-y-6">
-                <Tabs defaultValue="manual" className="w-full">
+                <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="manual">Manual Entry</TabsTrigger>
                     <TabsTrigger value="qr">QR Scanner</TabsTrigger>
@@ -289,7 +347,7 @@ const JoinAsCamera = () => {
                             className="uppercase"
                           />
                           <LoadingButton 
-                            onClick={validateEventCode}
+                            onClick={() => validateEventCode()}
                             loading={loading && !eventData}
                             disabled={!eventCode.trim() || !isOnline}
                             className={isMobile ? 'w-full' : ''}
@@ -301,11 +359,32 @@ const JoinAsCamera = () => {
                   </TabsContent>
                   
                   <TabsContent value="qr" className="space-y-4">
-                    <div className="border-2 border-dashed border-muted-foreground rounded-lg p-8 text-center">
-                      <Camera className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">
-                        QR code scanner will be implemented here
-                      </p>
+                    <div className="rounded-lg overflow-hidden">
+                      {isScanning ? (
+                        <div className="aspect-video bg-black">
+                          <QrReader
+                            delay={250}
+                            onError={handleScanError}
+                            onScan={handleScan}
+                            constraints={{ audio: false, video: { facingMode: 'environment' } }}
+                            style={{ width: '100%', height: '100%' }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed border-muted-foreground rounded-lg p-8 text-center">
+                          <Camera className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">QR scanning paused</p>
+                        </div>
+                      )}
+                    </div>
+                    {scanError && (
+                      <p className="text-sm text-destructive">{scanError}</p>
+                    )}
+                    <div className={`flex ${isMobile ? 'flex-col gap-2' : 'items-center gap-3'}`}>
+                      <Button variant="outline" onClick={() => setIsScanning((s) => !s)}>
+                        {isScanning ? 'Pause Scanner' : 'Start Scanner'}
+                      </Button>
+                      <Button variant="ghost" onClick={() => setActiveTab('manual')}>Switch to manual entry</Button>
                     </div>
                   </TabsContent>
                 </Tabs>
