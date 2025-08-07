@@ -40,7 +40,7 @@ serve(async (req) => {
 
     const { name, sport, startTime, expectedDuration, eventCode, streamingType, description, thumbnail } = await req.json();
 
-    console.log('Creating event:', { name, sport, startTime, expectedDuration, eventCode, streamingType });
+    console.log('Creating event:', { name, sport, startTime, expectedDuration, eventCode, streamingType, description: description?.substring(0, 50) });
 
     if (!name || !sport || !startTime || !expectedDuration || !eventCode || !streamingType) {
       throw new Error('Missing required fields: name, sport, startTime, expectedDuration, eventCode, and streamingType are required');
@@ -51,7 +51,7 @@ serve(async (req) => {
       .from('profiles')
       .select('youtube_access_token, youtube_channel_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     const hasYouTubeConnected = userProfile?.youtube_access_token && userProfile?.youtube_channel_id;
 
@@ -195,10 +195,21 @@ serve(async (req) => {
         youtube_stream_key: youtubeStreamData?.stream?.streamName || null
       })
       .select()
-      .single();
+      .maybeSingle();
 
     if (dbError) {
       console.error('Database error:', dbError);
+      console.error('Insert payload was:', {
+        name,
+        sport,
+        start_time: startTime,
+        expected_duration: expectedDuration,
+        event_code: eventCode,
+        mux_stream_id: muxData.data.id,
+        status: initialStatus,
+        owner_id: user.id,
+        streaming_type: streamingType
+      });
       throw new Error('Failed to create event in database');
     }
 
