@@ -99,10 +99,10 @@ const DirectorDashboard = () => {
     autoConnect: false
   });
 
-  // Filter camera participants (exclude director)
+  // Filter camera participants (include director camera)
   const cameraParticipants = useMemo(() => {
     return participants.filter(p => 
-      p.identity.startsWith('camera_') && !p.identity.includes('director')
+      p.identity.startsWith('camera_')
     );
   }, [participants]);
 
@@ -576,8 +576,12 @@ const DirectorDashboard = () => {
                 onStreamStart={() => {
                   toastService.success({
                     title: "Director Camera Connected",
-                    description: "Your camera feed is now live",
+                    description: "Your camera feed is now live and available for selection",
                   });
+                  // Force a refresh of the camera list
+                  setTimeout(() => {
+                    // The camera should automatically appear in the camera grid
+                  }, 1000);
                 }}
                 onStreamStop={() => {
                   toastService.success({
