@@ -18,6 +18,7 @@ import { useRealtimeEventUpdates } from "@/hooks/useRealtimeEventUpdates";
 import { useRealtimeCleanup } from "@/hooks/useRealtimeCleanup";
 import { useLiveKitRoom } from "@/hooks/useLiveKitRoom";
 import { LiveCameraCard } from "@/components/LiveCameraCard";
+import { LiveKitCameraStream } from "@/components/LiveKitCameraStream";
 import EventHeader from "@/components/EventHeader";
 import EventQRCode from "@/components/EventQRCode";
 import AppHeader from "@/components/AppHeader";
@@ -57,6 +58,7 @@ const DirectorDashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const [activeCameraIdentity, setActiveCameraIdentity] = useState<string | null>(null);
+  const [showDirectorCamera, setShowDirectorCamera] = useState(false);
   const isMobile = useIsMobile();
   
   // Generate stable user ID
@@ -422,6 +424,26 @@ const DirectorDashboard = () => {
                 eventCode={event.event_code} 
                 eventName={event.name} 
               />
+              
+              {/* Director Camera Section */}
+              <Card className="mt-4">
+                <CardHeader>
+                  <CardTitle className="text-sm">Connect Your Camera</CardTitle>
+                  <CardDescription className="text-xs">
+                    Join as a camera operator using this device
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-2">
+                  <Button
+                    onClick={() => setShowDirectorCamera(!showDirectorCamera)}
+                    variant={showDirectorCamera ? "secondary" : "default"}
+                    size="sm"
+                    className="w-full"
+                  >
+                    {showDirectorCamera ? "Hide Camera" : "Connect Camera"}
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
           )}
           
@@ -534,6 +556,39 @@ const DirectorDashboard = () => {
             )}
           </div>
         </div>
+
+        {/* Director Camera Stream */}
+        {showDirectorCamera && event && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Monitor className="h-5 w-5" />
+                Director Camera
+              </CardTitle>
+              <CardDescription>
+                Stream live video from this device as "Director Camera"
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LiveKitCameraStream
+                eventId={event.id}
+                deviceLabel="Director Camera"
+                onStreamStart={() => {
+                  toastService.success({
+                    title: "Director Camera Connected",
+                    description: "Your camera feed is now live",
+                  });
+                }}
+                onStreamStop={() => {
+                  toastService.success({
+                    title: "Director Camera Disconnected",
+                    description: "Your camera feed has stopped",
+                  });
+                }}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Program Feed Info */}
         {event?.program_url && (
