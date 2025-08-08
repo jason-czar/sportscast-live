@@ -130,7 +130,8 @@ const CreateEvent = () => {
       URL.revokeObjectURL(thumbnailPreview);
     }
   };
-  return <div className="min-h-screen bg-background">
+  return (
+    <div className="min-h-screen bg-background">
       <AppHeader />
       <div className="p-4">
         <div className="max-w-2xl mx-auto">
@@ -343,6 +344,7 @@ const CreateEvent = () => {
         </Card>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
 export default CreateEvent;
