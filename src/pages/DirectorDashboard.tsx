@@ -68,7 +68,7 @@ const DirectorDashboard = () => {
     userId: currentUserId 
   });
   
-  const { event, cameras, loading: dataLoading } = useRealtimeEventUpdates({
+  const { event, cameras, loading: dataLoading, refetch } = useRealtimeEventUpdates({
     eventId: eventId || ''
   });
 
@@ -274,6 +274,8 @@ const DirectorDashboard = () => {
       }
 
       toastService.event.streamStarted();
+      // Force refetch to get updated program_url and status
+      refetch?.event?.();
     } catch (error) {
       console.error('Error starting stream:', error);
       toastService.error({
@@ -310,6 +312,8 @@ const DirectorDashboard = () => {
       if (error) throw error;
 
       toastService.event.streamEnded();
+      // Force refetch to get updated status
+      refetch?.event?.();
     } catch (error) {
       console.error('Error ending stream:', error);
       toastService.error({
